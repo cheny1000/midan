@@ -1,0 +1,2278 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1c5c44">
+<meta name="description" content="ميدان — نظام إدارة المندوبين الميدانيين والمحلات التجارية في العراق">
+<title>ميدان — نظام إدارة المندوبين الميدانيين</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://unpkg.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<style>
+
+/* ================= المتغيرات والأساس ================= */
+:root{
+  --bg:#f3f1ea; --surface:#fffdf8; --surface2:#f7f4ec; --line:#e4dfd2;
+  --ink:#1c2a22; --ink2:#57685d; --ink3:#8d9c92;
+  --primary:#1c5c44; --primary-soft:#e1ede6; --accent:#a96a12; --accent-soft:#f5ebd8;
+  --danger:#b23a2e; --danger-soft:#f7e3df; --ok:#2e7d4f;
+  --side:#122a1f; --side-ink:#cfe0d6; --side-ink2:#8fa89a;
+  --radius:14px; --shadow:0 1px 2px rgba(28,42,34,.04),0 10px 28px -14px rgba(28,42,34,.16);
+}
+[data-theme="dark"]{
+  --bg:#0f1512; --surface:#171f1a; --surface2:#1c2620; --line:#29352d;
+  --ink:#e7e3d7; --ink2:#a3b3a8; --ink3:#6f8176;
+  --primary:#3d9e76; --primary-soft:#1b3129; --accent:#d79c40; --accent-soft:#302718;
+  --danger:#d16b5f; --danger-soft:#321f1c;
+  --side:#0b120e; --side-ink:#c4d4ca; --side-ink2:#71857a;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 30px -14px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box} html,body{margin:0}
+body{font-family:'IBM Plex Sans Arabic',sans-serif;background:var(--bg);color:var(--ink);font-size:14.5px;line-height:1.65;-webkit-font-smoothing:antialiased;transition:background .25s}
+h1,h2,h3{line-height:1.4;margin:0}
+p{margin:0}
+a{color:var(--primary)}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit}
+.ic{width:18px;height:18px;flex:none}
+.ic-xs{width:12px;height:12px}
+.ell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.muted{color:var(--ink3);font-size:13px}
+.tnum{font-variant-numeric:tabular-nums}
+::selection{background:var(--primary-soft)}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+
+/* ================= الشِل والتنقل ================= */
+.sidebar{position:fixed;inset-block:0;inset-inline-start:0;width:250px;background:var(--side);color:var(--side-ink);display:flex;flex-direction:column;z-index:60;transition:transform .25s}
+.brand{display:flex;align-items:center;gap:11px;padding:20px 18px 16px}
+.brand-mark{width:40px;height:40px;border-radius:12px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.brand-mark .ic{width:21px;height:21px}
+.brand b{font-size:17px;color:#fff;display:block;line-height:1.3}
+.brand small{font-size:11px;color:var(--side-ink2)}
+.snav{flex:1;overflow-y:auto;padding:6px 0}
+.snav a{display:flex;align-items:center;gap:11px;margin:2px 10px;padding:10px 13px;border-radius:11px;color:var(--side-ink);text-decoration:none;font-weight:500;font-size:13.5px}
+.snav a .ic{width:19px;height:19px;color:var(--side-ink2)}
+.snav a:hover{background:rgba(255,255,255,.06)}
+.snav a.on{background:var(--primary);color:#fff}
+.snav a.on .ic{color:#fff}
+.snav .sep{margin:12px 22px 6px;font-size:10.5px;color:var(--side-ink2);letter-spacing:.4px}
+.side-foot{border-top:1px solid rgba(255,255,255,.08);padding:12px}
+.user-card{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px}
+.user-card .avat{background:rgba(255,255,255,.12);color:#fff}
+.user-card b{color:#fff;font-size:13px;display:block;line-height:1.3}
+.user-card small{color:var(--side-ink2);font-size:11px}
+.user-card button{margin-inline-start:auto}
+.main{margin-inline-start:250px;min-height:100vh;display:flex;flex-direction:column}
+.content{padding:24px 28px 90px;max-width:1230px;width:100%;margin:0 auto;flex:1}
+.topbar{position:sticky;top:0;z-index:45;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:10px 20px}
+.page-title{font-size:16.5px;font-weight:700}
+.top-actions{margin-inline-start:auto;display:flex;align-items:center;gap:9px}
+.user-chip{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:4px 12px 4px 5px;font-size:12.5px;font-weight:600}
+.user-chip .avat{width:28px;height:28px;font-size:12px}
+.backdrop{position:fixed;inset:0;background:rgba(10,16,12,.45);z-index:55;opacity:0;pointer-events:none;transition:.2s}
+.backdrop.show{opacity:1;pointer-events:auto}
+.bottomnav{display:none;position:fixed;bottom:0;inset-inline:0;background:var(--surface);border-top:1px solid var(--line);z-index:50;padding:5px 8px calc(5px + env(safe-area-inset-bottom))}
+.bnav{display:flex;align-items:center}
+.bnav a,.bnav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;font-size:10.5px;color:var(--ink3);text-decoration:none;border:none;background:none;font-weight:500;border-radius:10px}
+.bnav .on{color:var(--primary);font-weight:700}
+.bnav .fab{flex:0 0 66px;background:var(--primary);color:#fff;border-radius:15px;height:54px;display:flex;flex-direction:row;align-items:center;justify-content:center;margin-top:-20px;box-shadow:0 8px 20px -6px color-mix(in srgb,var(--primary) 55%,transparent);font-size:11px;font-weight:700;gap:4px}
+@media(max-width:920px){
+  .sidebar{transform:translateX(100%)} .sidebar.open{transform:none}
+  .main{margin-inline-start:0} .content{padding:16px 14px 96px}
+  .bottomnav{display:flex}
+  .user-chip span{display:none} .user-chip{padding:3px;border-radius:99px}
+  .only-d{display:none!important}
+}
+@media(min-width:921px){.only-m{display:none!important}}
+
+/* ================= مكونات عامة ================= */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;border-radius:11px;padding:9px 16px;font-weight:600;font-size:13.5px;text-decoration:none;transition:.15s;background:transparent;color:var(--ink)}
+.btn.primary{background:var(--primary);color:#fff}
+.btn.primary:hover{filter:brightness(.92)}
+.btn.soft{background:var(--primary-soft);color:var(--primary)}
+.btn.ghost{border-color:var(--line);background:var(--surface)}
+.btn.ghost:hover{border-color:var(--ink3)}
+.btn.danger{background:var(--danger);color:#fff}
+.btn.tdanger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 35%,transparent);background:var(--danger-soft)}
+.btn.lg{padding:13px 22px;font-size:15px;border-radius:13px}
+.btn.sm{padding:6px 11px;font-size:12.5px;border-radius:9px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.icon-btn{width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--surface);color:var(--ink2);flex:none}
+.icon-btn:hover{color:var(--ink);border-color:var(--ink3)}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:99px;animation:rot .7s linear infinite}
+.spin.dark{border-color:color-mix(in srgb,var(--primary) 30%,transparent);border-top-color:var(--primary)}
+@keyframes rot{to{transform:rotate(360deg)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.page-head h2{font-size:20px;font-weight:700}
+.backlink{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink3);text-decoration:none;margin-bottom:4px}
+.backlink:hover{color:var(--primary)}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:99px;font-size:11.5px;font-weight:600;background:var(--surface2);color:var(--ink2);border:1px solid var(--line);white-space:nowrap}
+.badge.ok{background:var(--primary-soft);color:var(--primary);border-color:transparent}
+.badge.off{background:var(--danger-soft);color:var(--danger);border-color:transparent}
+.badge.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.badge.dim{color:var(--ink3)}
+.avat{width:36px;height:36px;border-radius:99px;background:var(--primary-soft);color:var(--primary);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none}
+#toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:300;display:flex;flex-direction:column-reverse;gap:8px;align-items:center;pointer-events:none;width:max-content;max-width:92vw}
+.toast{display:flex;align-items:center;gap:9px;background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:12px;font-weight:600;font-size:13px;box-shadow:0 12px 30px -8px rgba(0,0,0,.35);animation:tin .28s cubic-bezier(.2,.9,.3,1.2);max-width:92vw}
+.toast .ic{color:#7fd8a5}
+.toast.err{background:var(--danger);color:#fff}.toast.err .ic{color:#fff}
+.toast.warn{background:var(--accent);color:#fff}.toast.warn .ic{color:#fff}
+.toast.out{opacity:0;transform:translateY(8px);transition:.35s}
+@keyframes tin{from{opacity:0;transform:translateY(12px) scale(.95)}}
+.ovl{position:fixed;inset:0;background:rgba(9,15,11,.52);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;animation:fade .18s}
+.modal{background:var(--surface);border-radius:18px;width:100%;max-width:580px;max-height:90vh;overflow:auto;box-shadow:0 30px 80px -20px rgba(0,0,0,.45);animation:pop .22s cubic-bezier(.2,.9,.3,1.15)}
+.modal.sm{max-width:430px}.modal.lg{max-width:700px}
+@keyframes pop{from{opacity:0;transform:scale(.95) translateY(10px)}}
+@keyframes fade{from{opacity:0}}
+.modal-h{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);z-index:2;border-radius:18px 18px 0 0}
+.modal-h h3{font-size:15.5px}
+.modal-b{padding:18px 20px}
+.modal-act{display:flex;gap:10px;padding:4px 20px 20px}
+.sheet{position:fixed;inset-inline:0;bottom:0;margin-inline:auto;background:var(--surface);border-radius:18px 18px 0 0;max-width:520px;z-index:210;animation:up .28s cubic-bezier(.2,.9,.3,1);padding:10px 14px calc(16px + env(safe-area-inset-bottom))}
+@keyframes up{from{transform:translateY(100%)}}
+.sheet-item{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;padding:13px 10px;border-radius:12px;font-size:14px;font-weight:600;color:var(--ink);text-align:right;text-decoration:none}
+.sheet-item:hover{background:var(--surface2)}
+.field{margin-bottom:14px}
+.field>label{display:block;font-weight:600;font-size:12.5px;margin-bottom:6px;color:var(--ink2)}
+.req{color:var(--danger);font-style:normal}
+.ferr{color:var(--danger);font-size:11.5px;font-weight:600;margin-top:4px;min-height:2px}
+.field.has-err .inp{border-color:var(--danger)}
+.fhint{font-size:11.5px;color:var(--ink3);margin-top:4px}
+.inp{width:100%;border:1.5px solid var(--line);background:var(--surface);border-radius:11px;padding:10px 13px;font-size:14px;color:var(--ink);outline:none;transition:border .15s}
+.inp:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 14%,transparent)}
+.inp:disabled{background:var(--surface2);color:var(--ink3)}
+textarea.inp{resize:vertical;min-height:84px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.skel{background:linear-gradient(90deg,var(--surface2) 25%,var(--line) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shim 1.1s infinite;border-radius:12px}
+@keyframes shim{to{background-position:-200% 0}}
+.empty{padding:52px 20px;text-align:center;color:var(--ink3)}
+.empty .ic{width:38px;height:38px;margin-bottom:10px;color:var(--ink3)}
+.empty b{display:block;color:var(--ink2);font-size:15px;margin-bottom:4px}
+.empty p{font-size:13px}
+
+/* ================= الجداول ================= */
+.tblwrap{overflow-x:auto;border-radius:0 0 var(--radius) var(--radius)}
+table.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:right;font-size:11.5px;color:var(--ink3);font-weight:700;padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface2)}
+.tbl th:first-child{border-start-end-radius:var(--radius)}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tbody tr{transition:background .12s}
+.tbl tbody tr:hover{background:var(--surface2)}
+.tbl tbody tr:last-child td{border-bottom:none}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--ink)}
+th.sortable .ic{width:12px;height:12px;vertical-align:-2px;opacity:.7}
+.td-act{white-space:nowrap;text-align:left}
+@media(max-width:920px){
+  .tbl thead{display:none}
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:100%}
+  .tbl tbody tr{border:1px solid var(--line);border-radius:13px;margin-bottom:10px;padding:6px 4px;background:var(--surface)}
+  .tbl tbody tr:hover{background:var(--surface)}
+  .tbl td{border:none;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:7px 10px;text-align:left}
+  .tbl td::before{content:attr(data-l);color:var(--ink3);font-size:11.5px;font-weight:700;flex:none}
+  .tbl td.td-act{justify-content:flex-end}.tbl td.td-act::before{display:none}
+  .tbl td.td-strong{font-weight:700;font-size:14px}.tbl td.td-strong::before{color:var(--ink2)}
+}
+.rowactions{display:inline-flex;gap:5px}
+.rowactions .icon-btn{width:31px;height:31px;border-radius:8px}
+.filters{display:flex;flex-wrap:wrap;gap:10px;padding:14px;margin-bottom:16px;align-items:flex-end}
+.filters .f{min-width:135px;flex:1}
+.filters .f>label{font-size:11px;font-weight:700;color:var(--ink3);display:block;margin-bottom:4px}
+.filters .inp{padding:8px 11px;font-size:13px}
+.filters .f.w2{flex:1.6}
+.pgn{display:flex;align-items:center;gap:5px;justify-content:center;padding:14px;flex-wrap:wrap}
+.pgn button{min-width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink2);font-weight:600;font-size:12.5px}
+.pgn button.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+.pgn button:disabled{opacity:.35;cursor:default}
+.pgn .dots{color:var(--ink3);padding:0 2px}
+.tfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--line)}
+
+/* ================= لوحة التحكم ================= */
+.dash-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:16px}
+.dash-grid .w{grid-column:1/-1}
+@media(max-width:1000px){.dash-grid{grid-template-columns:1fr}}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 18px 0}
+.card-h b{font-size:14px}
+.card-h a{font-size:12px;text-decoration:none;font-weight:600}
+.pulse-big{font-size:34px;font-weight:700;letter-spacing:-.5px;line-height:1.1;font-variant-numeric:tabular-nums}
+.qrow{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line)}
+.qrow:last-child{border-bottom:none}
+.qrow .qi{width:36px;height:36px;border-radius:11px;background:var(--surface2);color:var(--primary);display:flex;align-items:center;justify-content:center;flex:none}
+.qrow b{margin-inline-start:auto;font-size:16px;font-variant-numeric:tabular-nums}
+.qrow small{display:block;color:var(--ink3);font-size:11.5px}
+.hbar{display:grid;grid-template-columns:88px 1fr 42px;align-items:center;gap:10px;padding:5px 0;font-size:12.5px}
+.hbar>span:first-child{color:var(--ink2);font-weight:600}
+.hbar .tr{height:9px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.hbar .tr i{display:block;height:100%;border-radius:99px;background:var(--primary);width:0;transition:width .8s cubic-bezier(.2,.8,.3,1)}
+.hbar.acc .tr i{background:var(--accent)}
+.hbar b{text-align:left;font-variant-numeric:tabular-nums;color:var(--ink)}
+.lb-row{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--line);position:relative;overflow:hidden}
+.lb-row:last-child{border-bottom:none}
+.lb-row .bg{position:absolute;inset-inline-start:0;top:0;bottom:0;background:var(--primary-soft);width:0;transition:width .9s cubic-bezier(.2,.8,.3,1);z-index:0}
+.lb-row>*{position:relative;z-index:1}
+.lb-rank{width:26px;height:26px;border-radius:99px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--ink3);flex:none}
+.lb-rank.top{background:var(--primary);color:#fff}
+.lb-rank.top2{background:var(--accent);color:#fff}
+.tl{position:relative;padding:4px 20px 8px 8px}
+.tl::before{content:'';position:absolute;inset-inline-start:6px;top:10px;bottom:12px;width:2px;background:var(--line)}
+.tli{position:relative;padding:6px 0;margin-inline-start:10px;font-size:12.5px}
+.tli::before{content:'';position:absolute;inset-inline-start:-18px;top:13px;width:8px;height:8px;border-radius:99px;background:var(--primary);outline:3px solid var(--surface)}
+.tli small{display:block;color:var(--ink3);font-size:11px}
+.cta-add{display:flex;align-items:center;gap:14px;width:100%;background:var(--primary);color:#fff;border:none;border-radius:16px;padding:20px 22px;font-size:16.5px;font-weight:700;box-shadow:0 12px 26px -10px color-mix(in srgb,var(--primary) 60%,transparent);transition:.15s;text-decoration:none;justify-content:center}
+.cta-add:hover{filter:brightness(.93)}
+.cta-add .ic{width:24px;height:24px}
+.stat-duo{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat-duo .card{padding:15px 17px}
+.stat-duo b{font-size:24px;display:block;font-variant-numeric:tabular-nums}
+.bar{transform-origin:bottom;transform-box:fill-box;animation:grow .55s cubic-bezier(.2,.8,.3,1) backwards}
+@keyframes grow{from{transform:scaleY(0)}}
+
+/* ================= شاشة الدخول ================= */
+.auth{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;background:var(--bg)}
+.auth-form{display:flex;align-items:center;justify-content:center;padding:32px 22px}
+.auth-card{width:100%;max-width:396px}
+.auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:26px}
+.auth-side{background:var(--side);color:var(--side-ink);position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:56px}
+.auth-side>*{position:relative;z-index:1}
+.auth-side h2{color:#fff;font-size:26px;margin:26px 0 8px}
+.feat{display:flex;gap:12px;align-items:flex-start;margin-top:16px;font-size:13.5px}
+.feat .ic{color:var(--accent);margin-top:3px;width:20px;height:20px}
+.auth-stats{display:flex;gap:26px;margin-top:38px;border-top:1px solid rgba(255,255,255,.1);padding-top:22px}
+.auth-stats b{color:#fff;font-size:21px;display:block}
+.auth-stats small{font-size:11.5px;color:var(--side-ink2)}
+.demo-acc{display:flex;align-items:center;gap:10px;width:100%;text-align:right;background:var(--surface2);border:1px dashed var(--line);border-radius:12px;padding:10px 13px;margin-top:8px;transition:.15s}
+.demo-acc:hover{border-color:var(--primary);background:var(--primary-soft)}
+.demo-acc b{font-size:13px;display:block;color:var(--ink)}
+.demo-acc small{font-size:11.5px;color:var(--ink3);font-family:monospace}
+.shake{animation:shk .4s}
+@keyframes shk{20%,60%{transform:translateX(5px)}40%,80%{transform:translateX(-5px)}}
+@media(max-width:920px){.auth{grid-template-columns:1fr}.auth-side{display:none}}
+
+/* ================= نماذج المحل والإعدادات ================= */
+.form-sec{padding:18px;margin-bottom:16px}
+.sec-h{display:flex;align-items:center;gap:10px;margin-bottom:16px;font-size:14px}
+.sec-h .ic{color:var(--primary)}
+.gps-row{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:10px;align-items:start}
+@media(max-width:640px){.gps-row{grid-template-columns:1fr 1fr}.gps-row .g-full{grid-column:1/-1}}
+.dup{border:1.5px dashed var(--accent);background:var(--accent-soft);border-radius:13px;padding:13px 15px;margin-bottom:16px;animation:pop .25s}
+.dup.sure{border-color:var(--danger);background:var(--danger-soft)}
+.dup-h{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;margin-bottom:8px}
+.dup.sure .dup-h{color:var(--danger)}
+.dup:not(.sure) .dup-h{color:var(--accent)}
+.dup-item{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:7px;font-size:12.5px;flex-wrap:wrap}
+.imgprev{position:relative;width:132px;height:96px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.imgprev img{width:100%;height:100%;object-fit:cover;display:block}
+.imgprev button{position:absolute;top:5px;inset-inline-start:5px;background:rgba(20,20,20,.65);color:#fff;border:none;border-radius:8px;width:26px;height:26px;display:flex;align-items:center;justify-content:center}
+.srow{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.srow:last-child{border:none}
+.sw{position:relative;width:40px;height:23px;border-radius:99px;background:var(--line);border:none;transition:.2s;flex:none}
+.sw::after{content:'';position:absolute;top:3px;inset-inline-start:3px;width:17px;height:17px;border-radius:99px;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw.on{background:var(--primary)}
+.sw.on::after{transform:translateX(-17px)}
+.tabs{display:flex;gap:4px;background:var(--surface2);padding:4px;border-radius:12px;width:fit-content;margin-bottom:18px}
+.tabs button{border:none;background:transparent;padding:8px 16px;border-radius:9px;font-weight:600;color:var(--ink2);font-size:13px}
+.tabs button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.acc-h{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;border-bottom:1px solid var(--line)}
+.acc-h:hover{background:var(--surface2)}
+.acc-b{border-bottom:1px solid var(--line);background:var(--surface2)}
+.acc-b .srow{background:var(--surface);border-radius:10px;margin:6px 10px;border:1px solid var(--line)}
+
+/* ================= تفاصيل المحل والخريطة ================= */
+.detail-grid{display:grid;grid-template-columns:280px 1fr;gap:18px}
+@media(max-width:820px){.detail-grid{grid-template-columns:1fr}}
+.dimg{border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);background:var(--surface2);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;color:var(--ink3)}
+.dimg img{width:100%;height:100%;object-fit:cover}
+.drow{display:flex;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13.5px;align-items:baseline}
+.drow:last-child{border:none}
+.drow>span:first-child{color:var(--ink3);font-size:12px;min-width:88px;flex:none;font-weight:600}
+#shopmap{height:290px;border-radius:var(--radius);border:1px solid var(--line);position:relative;z-index:1}
+.pinmark{background:none;border:none}
+.pin-dot{display:block;width:16px;height:16px;border-radius:99px;background:var(--primary);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.leaflet-container{font-family:inherit}
+
+@media print{.sidebar,.topbar,.bottomnav,.page-head .btn{display:none!important}.main{margin:0}}
+
+
+/* ============================================================
+   تحسينات الأداء والاستجابة للأجهزة المحمولة (mobile + perf)
+   ============================================================ */
+
+/* تحسينات الأداء العامة */
+*{ -webkit-tap-highlight-color: transparent; }
+html{ scroll-behavior:smooth; -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+body{ overscroll-behavior-y:none; }
+svg.ic{ shape-rendering:geometricPrecision; }
+.btn,.icon-btn,.sw,.snav a,.bnav a,.bnav button,.sheet-item,.demo-acc,.acc-h{
+  -webkit-touch-callout:none;
+  touch-action:manipulation;
+}
+/* تلميحات الرسوم المتحركة — تقلل الوميض وتسرّع الرسم */
+.bar,.hbar .tr i,.lb-row .bg{ will-change:transform; }
+.modal,.sheet,.ovl{ will-change:transform,opacity; }
+/* تقليل الحركات لمستخدمي يفضّلون ذلك */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{ animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; scroll-behavior:auto!important; }
+}
+
+/* أهداف لمس أكبر وأكثر راحة على الهاتف */
+@media (max-width:920px){
+  :root{ --radius:12px; }
+  .btn{ min-height:44px; padding:11px 16px; }
+  .btn.sm{ min-height:38px; padding:8px 12px; }
+  .icon-btn{ width:40px; height:40px; }
+  .rowactions .icon-btn{ width:36px; height:36px; }
+  .inp{ font-size:16px; padding:11px 13px; }  /* 16px يمنع تكبير iOS تلقائيًا */
+  textarea.inp{ font-size:16px; }
+  select.inp{ font-size:16px; }
+  .snav a{ padding:13px 14px; font-size:14px; min-height:44px; }
+  .snav a .ic{ width:20px; height:20px; }
+  .bnav a,.bnav button{ padding:8px 2px 6px; font-size:11px; min-height:50px; }
+  .bnav .ic,.bnav svg.ic{ width:22px; height:22px; }
+  .user-chip .avat{ width:32px; height:32px; }
+  .avat{ width:36px; height:36px; }
+  /* الشريط العلوي — مرن على الهاتف */
+  .topbar{ padding:10px 12px; gap:8px; }
+  .page-title{ font-size:15.5px; }
+  .top-actions{ gap:6px; }
+  .user-chip{ display:none; }  /* يكفي اسم المستخدم في الشريط الجانبي */
+  /* المحتوى */
+  .content{ padding:14px 12px calc(96px + env(safe-area-inset-bottom)); }
+  .page-head{ margin-bottom:14px; }
+  .page-head h2{ font-size:18px; }
+  .page-head .btn{ width:100%; }
+  /* البطاقات */
+  .card{ border-radius:12px; }
+  .card-h{ padding:13px 14px 0; }
+  .form-sec{ padding:14px; }
+  /* النوافذ المنبثقة — ملء الشاشة على الهاتف */
+  .ovl{ padding:0; align-items:stretch; }
+  .modal{ max-width:100%; width:100%; max-height:100vh; border-radius:0; }
+  .modal.sm,.modal.lg{ max-width:100%; }
+  .modal-h{ border-radius:0; padding:14px 16px; }
+  .modal-b{ padding:14px 16px; }
+  .modal-act{ padding:8px 16px calc(16px + env(safe-area-inset-bottom)); }
+  .sheet{ max-width:100%; border-radius:18px 18px 0 0; }
+  /* الجداول على الهاتف — راحة أكبر */
+  .tbl td{ padding:9px 10px; font-size:13.5px; }
+  /* الفلاتر — عمود واحد على الهاتف الصغير */
+  .filters{ gap:8px; padding:12px; }
+  .filters .f{ min-width:0; flex:1 1 100%; }
+  .filters .f.w2{ flex:1 1 100%; min-width:0; }
+  .filters .inp{ width:100%; }
+  /* لوحة التحكم — أحجام خط أكبر للقراءة */
+  .pulse-big{ font-size:28px; }
+  .qrow{ padding:11px 14px; }
+  .stat-duo b{ font-size:22px; }
+  /* تسجيل الدخول على الهاتف */
+  .auth-form{ padding:24px 16px; }
+  .auth-card{ max-width:100%; }
+  /* تفاصيل المحل */
+  .dimg{ aspect-ratio:4/3; }
+  #shopmap{ height:240px; }
+  /* زر الإجراءات العائم */
+  .bnav .fab{ flex:0 0 60px; height:50px; border-radius:14px; margin-top:-18px; }
+  /* الإشعارات */
+  #toasts{ bottom:calc(80px + env(safe-area-inset-bottom)); }
+  .toast{ max-width:88vw; font-size:12.5px; padding:10px 14px; }
+}
+
+/* هواتف صغيرة (أقل من 380px) — تعديلات إضافية */
+@media (max-width:380px){
+  body{ font-size:14px; }
+  .content{ padding:12px 10px calc(96px + env(safe-area-inset-bottom)); }
+  .page-head h2{ font-size:16.5px; }
+  .pulse-big{ font-size:24px; }
+  .brand b{ font-size:15px; }
+  .brand small{ font-size:10.5px; }
+  .sidebar{ width:240px; }
+  .snav a{ font-size:13.5px; padding:12px 12px; }
+  .modal-b,.modal-h,.modal-act{ padding-left:14px; padding-right:14px; }
+  .form-sec{ padding:12px; }
+  .btn.lg{ padding:12px 18px; font-size:14.5px; }
+}
+
+/* الوضع الأفقي على الهاتف — استغلال أفضل للمساحة */
+@media (max-width:920px) and (orientation:landscape){
+  .modal{ max-height:100vh; overflow:auto; }
+  .sheet{ max-width:520px; }
+}
+
+/* تحسينات الطباعة */
+@media print{
+  .sidebar,.topbar,.bottomnav,.backdrop,#toasts,.page-head .btn,
+  .rowactions,.cta-add,.filters,.pgn,.tfoot{ display:none!important; }
+  .main{ margin:0; }
+  .content{ padding:0; max-width:100%; }
+  .card{ box-shadow:none; border:1px solid #ccc; page-break-inside:avoid; }
+  body{ background:#fff; color:#000; font-size:12pt; }
+  .modal,.sheet,.ovl{ display:none!important; }
+}
+
+/* شريط التمرير — أخف وأكثر تناسقًا */
+.snav::-webkit-scrollbar{ width:6px; }
+.snav::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.15); border-radius:99px; }
+.snav::-webkit-scrollbar-track{ background:transparent; }
+.tblwrap::-webkit-scrollbar{ height:6px; }
+.tblwrap::-webkit-scrollbar-thumb{ background:var(--line); border-radius:99px; }
+
+/* تركيز أوضح للوصول بلوحة المفاتيح */
+:focus-visible{ outline-offset:3px; }
+
+/* منع تكبير الخط على الشاشات الكبيرة جدًا */
+@media (min-width:1400px){
+  .content{ max-width:1280px; }
+}
+
+</style>
+</head>
+<body>
+<div id="toasts"></div>
+<div id="app"></div>
+<script>
+
+'use strict';
+/* ============================================================
+   ميدان — نظام إدارة المندوبين الميدانيين (نسخة تعمل محليًا بالكامل)
+   البنية: طبقة بيانات علائقية محلية (localStorage) + طبقة API
+   + موجّه صفحات + RBAC + سجل نشاط + تصدير + خرائط
+   ============================================================ */
+
+/* ---------- أدوات عامة ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=p=>p+'-'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
+const debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
+const fmtNum=n=>Number(n||0).toLocaleString('en-US');
+const M_IQ=['كانون الثاني','شباط','آذار','نيسان','أيار','حزيران','تموز','آب','أيلول','تشرين الأول','تشرين الثاني','كانون الأول'];
+function fmtDate(ts){if(!ts)return'—';const d=new Date(ts);return `${d.getDate()} ${M_IQ[d.getMonth()]} ${d.getFullYear()}`}
+function fmtTime(ts){const d=new Date(ts);return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`}
+function fmtDT(ts){return fmtDate(ts)+' — '+fmtTime(ts)}
+function timeAgo(ts){const s=Math.floor((Date.now()-ts)/1000);if(s<60)return'قبل لحظات';if(s<3600)return`قبل ${Math.floor(s/60)} دقيقة`;if(s<86400)return`قبل ${Math.floor(s/3600)} ساعة`;const d=Math.floor(s/86400);if(d===1)return'أمس';if(d<30)return`قبل ${d} يوم`;return fmtDate(ts)}
+const dayStart=ts=>{const d=new Date(ts);d.setHours(0,0,0,0);return d.getTime()};
+function normAr(s){return String(s||'').replace(/[\u064B-\u0652\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ؤ/g,'و').replace(/ئ/g,'ي').replace(/ة/g,'ه').replace(/[^\u0621-\u064A0-9a-zA-Z ]/g,' ').replace(/\s+/g,' ').trim().toLowerCase()}
+function lev(a,b){if(a===b)return 0;const m=a.length,n=b.length;if(!m||!n)return m||n;let prev=[...Array(n+1).keys()];for(let i=1;i<=m;i++){const cur=[i];for(let j=1;j<=n;j++)cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));prev=cur}return prev[n]}
+function sim(a,b){a=normAr(a);b=normAr(b);if(!a||!b)return 0;if(a===b)return 1;const L=Math.max(a.length,b.length);return 1-lev(a,b)/L}
+const phonesOnly=s=>String(s||'').replace(/\D/g,'').slice(-9);
+function el(h){const t=document.createElement('template');t.innerHTML=h.trim();return t.content.firstElementChild}
+const isoDay=d=>{const x=new Date(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`};
+
+/* ---------- الأيقونات (SVG مضمّنة) ---------- */
+const ICONS={
+ pin:'<path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11Z"/><circle cx="12" cy="10" r="2.6"/>',
+ home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/>',
+ grid:'<rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/>',
+ users:'<circle cx="9" cy="8" r="3.4"/><path d="M2.6 20c.8-3.1 3.3-4.9 6.4-4.9s5.6 1.8 6.4 4.9"/><path d="M15.4 4.7a3.4 3.4 0 0 1 0 6.6"/><path d="M17.6 15.3c1.9.8 3.3 2.4 3.8 4.7"/>',
+ user:'<circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5c1-3.9 4-5.8 7.5-5.8s6.5 1.9 7.5 5.8"/>',
+ bag:'<path d="M5.2 8h13.6l-1.2 12.1a1.6 1.6 0 0 1-1.6 1.4H8a1.6 1.6 0 0 1-1.6-1.4L5.2 8Z"/><path d="M8.5 10.5V6.5a3.5 3.5 0 0 1 7 0v4"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+ x:'<path d="M6 6l12 12M18 6 6 18"/>',
+ sort:'<path d="M8 5v14M8 5 5 8.2M8 5l3 3.2M16 19V5M16 19l-3-3.2M16 19l3-3.2"/>',
+ pencil:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z"/>',
+ trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13.2h10L18 7"/><path d="M9 7V4h6v3"/>',
+ eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/>',
+ power:'<path d="M12 3v8"/><path d="M6.4 6.5a8 8 0 1 0 11.2 0"/>',
+ key:'<circle cx="7.5" cy="15.5" r="3.6"/><path d="m10.2 12.8 8.8-8.8M16 7l2.6 2.6M13.4 4.4 16 7"/>',
+ download:'<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',
+ file:'<path d="M6 2.5h8L18 6.5V21.5H6V2.5Z"/><path d="M13.5 2.5v4.5H18M9 12.5h6M9 16.5h6"/>',
+ printer:'<path d="M7 8V3h10v5"/><rect x="4" y="8" width="16" height="8" rx="1.6"/><path d="M7 14h10v7H7v-7Z"/>',
+ sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M5 5l1.4 1.4M17.6 17.6 19 19M2.5 12h2M19.5 12h2M5 19l1.4-1.4M17.6 6.4 19 5"/>',
+ moon:'<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/>',
+ logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+ phone:'<path d="M5 4h4l1.5 4L8 9.7a12.5 12.5 0 0 0 6.3 6.3l1.7-2.5 4 1.5v4a2 2 0 0 1-2.2 2A16.8 16.8 0 0 1 3 6.2 2 2 0 0 1 5 4Z"/>',
+ camera:'<rect x="3" y="7" width="18" height="13" rx="2.2"/><path d="M8.2 7 9.8 4h4.4L15.8 7"/><circle cx="12" cy="13" r="3.4"/>',
+ gps:'<circle cx="12" cy="12" r="6.5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="1.5"/>',
+ check:'<path d="m5 13 4 4L19 7"/>',
+ alert:'<path d="M12 3.5 2.8 19.5h18.4L12 3.5Z"/><path d="M12 10v4.5M12 17.3v.4"/>',
+ clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+ act:'<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+ gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2.8 13 5.6a6.7 6.7 0 0 1 2.2 1.3l2.9-.9 1.8 3.1-2.1 2.1c.1.4.1.8.1 1.3s0 .9-.1 1.3l2.1 2.1-1.8 3.1-2.9-.9a6.7 6.7 0 0 1-2.2 1.3l-1 2.8h-2l-1-2.8a6.7 6.7 0 0 1-2.2-1.3l-2.9.9-1.8-3.1 2.1-2.1a7 7 0 0 1 0-2.6L3.1 9.1l1.8-3.1 2.9.9A6.7 6.7 0 0 1 10 5.6l1-2.8h1Z"/>',
+ star:'<path d="m12 3 2.6 5.6 6 .7-4.5 4.1 1.2 5.9L12 16.4l-5.3 2.9 1.2-5.9L3.4 9.3l6-.7L12 3Z"/>',
+ dots:'<circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/>',
+ cal:'<rect x="3.5" y="5" width="17" height="16" rx="2.2"/><path d="M8 3v4M16 3v4M3.5 10h17"/>',
+ lock:'<rect x="5" y="11" width="14" height="10" rx="2.2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+ mail:'<rect x="3" y="5" width="18" height="14" rx="2.2"/><path d="m3.5 7.5 8.5 6 8.5-6"/>',
+ img:'<rect x="3" y="4.5" width="18" height="15" rx="2.2"/><circle cx="9" cy="10" r="1.7"/><path d="m4 18.5 5-5 4 4 3-3 4 4"/>',
+ list:'<path d="M8.5 6h12M8.5 12h12M8.5 18h12"/><circle cx="4.2" cy="6" r="1.1" fill="currentColor" stroke="none"/><circle cx="4.2" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="4.2" cy="18" r="1.1" fill="currentColor" stroke="none"/>',
+ menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
+ db:'<ellipse cx="12" cy="5.5" rx="8" ry="2.6"/><path d="M4 5.5V18.5c0 1.4 3.6 2.6 8 2.6s8-1.2 8-2.6V5.5"/><path d="M4 12c0 1.4 3.6 2.6 8 2.6s8-1.2 8-2.6"/>',
+ chevL:'<path d="m15 6-6 6 6 6"/>',
+ chevR:'<path d="m9 6 6 6-6 6"/>',
+ chevD:'<path d="m6 9 6 6 6-6"/>',
+ copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+ trophy:'<path d="M8 4h8v5.5a4 4 0 0 1-8 0V4Z"/><path d="M8 5H4.5a3.5 3.5 0 0 0 3.6 4M16 5h3.5a3.5 3.5 0 0 1-3.6 4"/><path d="M12 13.5v3M8.5 20.5h7M10.2 20.5l.5-4h2.6l.5 4"/>',
+ shield:'<path d="M12 3 5 5.8v5.3c0 4.5 3 8.4 7 9.9 4-1.5 7-5.4 7-9.9V5.8L12 3Z"/><path d="m9.2 11.7 2 2 3.6-3.9"/>',
+};
+const icon=(n,c='')=>`<svg class="ic ${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`;
+
+/* ---------- الإشعارات والنوافذ ---------- */
+function toast(msg,type='ok'){const t=el(`<div class="toast ${type}">${icon(type==='ok'?'check':'alert')}<span>${msg}</span></div>`);$('#toasts').appendChild(t);setTimeout(()=>t.classList.add('out'),3300);setTimeout(()=>t.remove(),3750)}
+function confirmDialog({title='تأكيد العملية',msg='',okText='تأكيد',danger=false}={}){
+  return new Promise(res=>{
+    const ov=el(`<div class="ovl"><div class="modal sm">
+      <div class="modal-h"><h3>${esc(title)}</h3><button class="icon-btn" data-x="no" style="width:30px;height:30px">${icon('x')}</button></div>
+      <div class="modal-b" style="padding-top:8px">${msg}</div>
+      <div class="modal-act"><button class="btn ${danger?'danger':'primary'}" data-x="ok">${esc(okText)}</button><button class="btn ghost" data-x="no">إلغاء</button></div>
+    </div></div>`);
+    document.body.appendChild(ov);
+    ov.addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(b){res(b.dataset.x==='ok');ov.remove()}else if(e.target===ov){res(false);ov.remove()}});
+  });
+}
+function openModal(html,cls=''){const ov=el(`<div class="ovl"><div class="modal ${cls}">${html}</div></div>`);document.body.appendChild(ov);const close=()=>ov.remove();ov.addEventListener('click',e=>{if(e.target===ov)close()});return{ov,close}}
+function openSheet(items){const ov=el(`<div class="ovl" style="align-items:flex-end"><div class="sheet">${items.map(i=>`<a class="sheet-item" href="${i.href||'#'}" data-x="${i.id||''}">${icon(i.ic)}<span>${esc(i.t)}</span>${i.end||''}</a>`).join('')}</div></div>`);
+  document.body.appendChild(ov);
+  ov.addEventListener('click',e=>{if(e.target===ov||e.target.closest('[data-x="close"]'))ov.remove();else if(!e.target.closest('.sheet-item'))return;else ov.remove()});
+  return ov;
+}
+
+/* ============================================================
+   طبقة البيانات — المخطط العلائقي (users, representatives,
+   shops, governorates, cities, business_types, activity_logs)
+   ============================================================ */
+const LS='midan_db_v2', SKEY='midan_session_v2';
+let DB=null;
+const save=()=>localStorage.setItem(LS,JSON.stringify(DB));
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+/* التشفير: SHA-256 + Salt لكل مستخدم */
+async function sha256(s){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+ catch(e){let h=5381;for(const c of s)h=((h<<5)+h+c.charCodeAt(0))>>>0;return'h'+h.toString(16)}}
+async function hashPw(pw,salt){return sha256(salt+'::'+pw)}
+const newSalt=()=>[...crypto.getRandomValues(new Uint8Array(8))].map(x=>x.toString(16).padStart(2,'0')).join('');
+
+/* ---------- بيانات العراق المرجعية ---------- */
+const GOVS_CITIES={
+ 'بغداد':['الكرادة','الأعظمية','الكاظمية','المنصور','الدورة','زيونة','الحبيبية','أبو غريب','الطارمية','المحمودية','الشعلة','شط الهندية'],
+ 'البصرة':['مركز البصرة','الزبير','القرنة','شط العرب','أبو الخصيب','المدينة','الهارثة','الفاو','أم قصر'],
+ 'نينوى':['الموصل','تلعفر','سنجار','الحمدانية','البعاج','القيارة','شيخان','المحمور'],
+ 'أربيل':['أربيل','شقلاوة','سوران','كويسنجق','حاجي عمران','مفريقة'],
+ 'السليمانية':['السليمانية','رانية','حلبجة','دوكان','جمجمال','شاربازير'],
+ 'دهوك':['دهوك','زاخو','سيميل','عقرة','برادوست'],
+ 'كركوك':['كركوك','الحويجة','داقوق','الزبير الصغير'],
+ 'الأنبار':['الرمادي','الفلوجة','هيت','الخالدية','حديثة','القائم','الرطبة','عانة'],
+ 'صلاح الدين':['تكريت','سامراء','بيجي','بلد','الدجيل','طوزخورماتو','الشرقاط'],
+ 'ديالى':['بعقوبة','المقدادية','خانيقين','كفري','بلدروز','مندلي'],
+ 'واسط':['الكوت','الحي','النعمانية','بدرة','علي الغربي','الصويرة'],
+ 'بابل':['الحلة','المسيب','المحاويل','هيل','الإسكندرية'],
+ 'كربلاء':['كربلاء','الهندية','عين التمر'],
+ 'النجف':['النجف','الكوفة','المناذرة','الميشخب'],
+ 'القادسية':['الديوانية','الحمزة','الشامية','عفك'],
+ 'المثنى':['السماوة','الرميثة','الخضر','السلمان'],
+ 'ذي قار':['الناصرية','الشطرة','الرفاعي','سوق الشيوخ','الغراف','الجبايش','النصر'],
+ 'ميسان':['العمارة','المجر الكبير','قلعة صالح','الميمونة','الكحلاء','علي الشرقي','المشرة'],
+};
+const BIZ_TYPES=['بقالة','سوبر ماركت','مطعم','مقهى','صيدلية','محل ملابس','محل أحذية','محل أجهزة كهربائية','محل مواد منزلية','محل مواد غذائية','محل هواتف','محل إكسسوارات','محل قطع غيار','ورشة','مكتبة','محل حلويات','مخبز','نشاط تجاري آخر'];
+const GOV_CENTER={'بغداد':[33.315,44.365],'البصرة':[30.51,47.79],'نينوى':[36.34,43.13],'أربيل':[36.19,44.01],'السليمانية':[35.56,45.43],'دهوك':[36.86,42.99],'كركوك':[35.47,44.39],'الأنبار':[33.42,43.3],'صلاح الدين':[34.6,43.68],'ديالى':[33.75,44.64],'واسط':[32.51,44.62],'بابل':[32.47,44.43],'كربلاء':[32.62,44.02],'النجف':[32.02,44.34],'القادسية':[31.99,44.93],'المثنى':[31.29,45.28],'ذي قار':[31.05,46.26],'ميسان':[31.84,47.14]};
+
+/* ---------- بناء البيانات التجريبية ---------- */
+async function seedDB(){
+  const rnd=mulberry32(20240613);
+  const pick=a=>a[Math.floor(rnd()*a.length)];
+  DB={users:[],representatives:[],shops:[],governorates:[],cities:[],types:[],logs:[]};
+  /* المحافظات والمدن */
+  let gi=0;
+  for(const[g,cs]of Object.entries(GOVS_CITIES)){
+    const gid='gov'+(++gi);
+    DB.governorates.push({id:gid,name:g,createdAt:Date.now()});
+    cs.forEach(c=>DB.cities.push({id:uid('city'),govId:gid,name:c,createdAt:Date.now()}));
+  }
+  /* أنواع النشاط */
+  BIZ_TYPES.forEach((t,i)=>DB.types.push({id:'bt'+(i+1),name:t,status:'active',createdAt:Date.now()-864e5*120+i}));
+  /* المستخدمون */
+  const mkUser=async(name,uname,role,phone,gov,status)=>{const salt=newSalt();const u={id:uid('u'),name,username:uname,phone,passwordHash:await hashPw(role==='admin'?'admin123':'rep123',salt),salt,role,status,assignedGov:gov,createdAt:Date.now()-864e5*(90+Math.floor(rnd()*40)),updatedAt:Date.now(),lastLoginAt:Date.now()-864e5*Math.floor(rnd()*5)};DB.users.push(u);if(role==='rep')DB.representatives.push({id:uid('rp'),user_id:u.id,assigned_governorate:gov,created_at:u.createdAt});return u};
+  await mkUser('عبد الرحمن الهاشمي','admin','admin','07700000001',null,'active');
+  DB.users[0].isSuper=true;DB.users[0].permissions={};
+  const reps=[
+    await mkUser('أحمد الجبوري','ahmed','rep','07701234567','بغداد','active'),
+    await mkUser('حسين العبيدي','hussein','rep','07511122334','نينوى','active'),
+    await mkUser('مرتضى الساعدي','mortadha','rep','07802233445','البصرة','active'),
+    await mkUser('عمر الخفاجي','omar','rep','07903344556','بابل','active'),
+    await mkUser('مصطفى العلي','mustafa','rep','07714455667','النجف','disabled'),
+    await mkUser('سجاد الدليمي','sajjad','rep','07825566778','الأنبار','active'),
+  ];
+  /* المحلات التجريبية */
+  const NAMES=['البركة','النخيل','دجلة','الرافدين','المنارة','شهريار','أبو نواس','المربد','الزوراء','السندباد','كرامة','الأمانة','الصديق','الجواهر','الواحة','الخير','النجمة','الهلال','التعاون','الشهباء','أبو حنيفة','الكندي','أربيل','بابل','أور','الحمراء','الوسمية','أبو الطيب','المتنبي','العلوي','النجيب','كهيّة','القشاني','التاجر','الوطنية','الرياض','الفتح','الإيمان','السلام','الصفا','اليرموك','حطين','عين الجامعة','الدانة','غzęenan'.slice(0,0)+'الغزالة','الشط','الفجر','الوفاء','النور','الأمين','الرشيد','المعتصم','الجليل','المتوكل','الصابئ','سمرا','بابلونيا','قلعة شميماس','الخليج','الزيتونة','ميسان'];
+  const OWNERS=['أبو كرار الجبوري','حيدر عبد الله','قاسم محمد علي','كرار حسين','أحمد سليم','زين العابدين','سيف الدين نجيم','عمار ياسر','حسام الدين','ميثم رعد','نور الدين سعيد','صباح فاضل','علي صادق','مهند ناصر','وليد جاسم','رياض حسين شغيد','جاسم عبود','فاضل مالك','سعدون حمود','خالد إبراهيم','بشار سعد','إيهاب عبد الكريم','غسان محمد','لايث حارث','تميم الصائغ'];
+  const STREETS=['الجمهورية','الرشيد','السعدون','المتصل','62','كهرمانة','النهرين','الفنار','أبو جعفر المنصور','التحرير','الشارع التجاري الرئيسي'];
+  const LAND=['السوق','المستشفى العام','المدرسة','الجامع الكبير','الساحة الرئيسية','البنك','المحطة القديمة','الجسر','دوار الحدودية','الحدائق العامة'];
+  const REP_LOAD=[0,20,16,15,12,9,4];
+  const typeW=[0,0,1,1,1,2,2,3,3,4,5,6,7,8,8,9,9,9,10,10,11,11,12,12,13,14,15,16,17,17,17,17,1,0,2,3,5,8,9,10,4,6,2,0,15,16,3,7,9,1,12,10,2,8,0,5,17,13,6,9];
+  let nameIdx={},shopN=0;
+  const today0=dayStart(Date.now());
+  reps.forEach((rep,ri)=>{
+    const cnt=REP_LOAD[ri+1];
+    for(let k=0;k<cnt;k++){
+      const bt=DB.types[Math.floor(rnd()*typeW.length?0:0)]||DB.types[0]; // placeholder (يُستبدل فورًا)
+      const type=DB.types[typeW[Math.floor(rnd()*typeW.length)]];
+      let nm,tries=0;
+      do{const base=NAMES[(nameIdx[type.name]=(nameIdx[type.name]??(shopN*Math.floor(rnd()*0)+Math.floor(rnd()*NAMES.length)))%NAMES.length)];nm=base;nameIdx[type.name]++;tries++}
+      while(DB.shops.some(s=>s.typeName===type.name&&normAr(s.name)===normAr(nm))&&tries<80);
+      /* التاريخ: 3 محلات اليوم، والباقي عبر آخر 45 يومًا */
+      let ts;
+      if(k<3)ts=today0+(8+Math.floor(rnd()*8))*36e5;
+      else ts=Date.now()-Math.floor(1+rnd()*45)*864e5-Math.floor(rnd()*20)*36e5;
+      const gov=rnd()<.72&&rep.assignedGov?DB.governorates.find(g=>g.name===rep.assignedGov):pick(DB.governorates);
+      const cities=DB.cities.filter(c=>c.govId===gov.id);
+      const city=pick(cities);
+      const[cla,clo]=GOV_CENTER[gov.name];
+      const hasGps=rnd()<.8, hasImg=rnd()<.3, hasShop=rnd()<.35;
+      const t=DB.types.find(x=>x.id===type.id);
+      DB.shops.push({id:uid('sh'),name:nm,ownerName:pick(OWNERS),typeId:type.id,typeName:type.name,govId:gov.id,govName:gov.name,cityId:city.id,cityName:city.name,
+        address:`شارع ${pick(STREETS)} — مقابل ${pick(LAND)}`,
+        phoneOwner:rnd()<.85?'07'+pick(['70','71','72','73','75','77','78','79','80','81','82','83','85','87','88','89','90','91','92','93','95','96','97','98','99'])+String(Math.floor(rnd()*1e7)).padStart(7,'0'):'',
+        phoneShop:hasShop?'07'+pick(['70','75','77','78','79','87','90'])+String(Math.floor(rnd()*1e7)).padStart(7,'0'):'',
+        notes:rnd()<.25?pick(['صاحب المحل مهتم بالتعاون — يفضل الاتصال بعد الظهر','المحل بحاجة لإعادة زيارة لإتمام الاتفاق','الطلب الشهري منتظم — مندوب سابق كان يخدمه','موقع حيوي، حركة مرور ممتازة']):'',
+        latitude:hasGps?+(cla+(rnd()-.5)*.24).toFixed(6):null,
+        longitude:hasGps?+(clo+(rnd()-.5)*.24).toFixed(6):null,
+        image:hasImg?`https://picsum.photos/seed/midan${++shopN}/640/420.jpg`:null,
+        repId:rep.id,repName:rep.name,createdAt:ts,updatedAt:ts});
+    }
+  });
+  DB.logs=[{id:uid('lg'),userId:DB.users[0].id,userName:DB.users[0].name,action:'login',entityType:'user',entityId:DB.users[0].id,details:'تثبيت النظام وتهيئة البيانات الأولية',createdAt:Date.now()-36e5}];
+  save();
+}
+
+/* ---------- الجلسات ---------- */
+function setSession(u){localStorage.setItem(SKEY,JSON.stringify({uid:u.id,exp:Date.now()+8*36e5}))}
+function clearSession(){localStorage.removeItem(SKEY)}
+function restoreSession(){try{const s=JSON.parse(localStorage.getItem(SKEY));if(!s||s.exp<Date.now())return clearSession(),null;const u=DB.users.find(x=>x.id===s.uid);if(!u||u.status!=='active')return clearSession(),null;return pubUser(u)}catch(e){return null}}
+const pubUser=u=>({id:u.id,name:u.name,username:u.username,phone:u.phone,role:u.role,status:u.status,assignedGov:u.assignedGov,isSuper:!!u.isSuper,createdAt:u.createdAt,lastLoginAt:u.lastLoginAt});
+
+/* ترقية قاعدة البيانات القديمة — إضافة مفهوم «المدير العام» وحقل الصلاحيات */
+function migrateDB(){
+  let ch=false;
+  if(!DB.users.some(u=>u.role==='admin'&&u.isSuper)){
+    const a=DB.users.find(u=>u.role==='admin');
+    if(a){a.isSuper=true;ch=true}
+  }
+  DB.users.forEach(u=>{if(u.role==='admin'&&!u.isSuper&&!u.permissions){u.permissions={};ch=true}});
+  if(ch)save();
+}
+const me=()=>state.user;
+
+/* ---------- سجل النشاط ---------- */
+const ACTION_L={login:['تسجيل دخول','badge'],logout:['تسجيل خروج','badge'],shop_create:['إضافة محل','badge ok'],shop_update:['تعديل محل','badge acc'],shop_delete:['حذف محل','badge off'],rep_create:['إنشاء مندوب','badge ok'],rep_update:['تعديل مندوب','badge acc'],rep_toggle:['تغيير حالة مندوب','badge acc'],rep_delete:['حذف مندوب','badge off'],rep_reset:['إعادة تعيين كلمة مرور','badge acc'],account_update:['تعديل حساب المدير','badge acc'],type_create:['إضافة نشاط','badge ok'],type_update:['تعديل نشاط','badge acc'],type_toggle:['تعطيل / تفعيل نشاط','badge acc'],gov_create:['إضافة محافظة','badge ok'],city_create:['إضافة مدينة','badge ok'],city_update:['تعديل مدينة','badge acc'],export:['تصدير بيانات','badge'],print:['طباعة تقرير','badge'],pw_change:['تغيير كلمة مرور','badge acc'],admin_create:['إنشاء مدير','badge ok'],admin_update:['تعديل مدير','badge acc'],admin_toggle:['تغيير حالة مدير','badge acc'],admin_delete:['حذف مدير','badge off'],admin_reset:['إعادة تعيين كلمة مرور مدير','badge acc']};
+function log(userId,action,entityType,entityId,details){
+  const u=DB.users.find(x=>x.id===userId);
+  DB.logs.unshift({id:uid('lg'),userId,userName:u?u.name:'مستخدم محذوف',action,entityType,entityId,details,createdAt:Date.now()});
+  if(DB.logs.length>2500)DB.logs.length=2500;save();
+}
+
+/* ---------- نُسخ محسوبة للمحل (تحاكي الفهارس والربط) ---------- */
+function denorm(s){const t=DB.types.find(t=>t.id===s.typeId);
+  /* عند اختيار «نشاط تجاري آخر» يُستخدم النص المُدخل يدويًا كاسم للنشاط */
+  s.typeName=(t&&t.name==='نشاط تجاري آخر'&&s.customType&&String(s.customType).trim())?String(s.customType).trim():(t?t.name:'—');
+  const g=DB.governorates.find(g=>g.id===s.govId);s.govName=g?g.name:'—';
+  const c=DB.cities.find(c=>c.id===s.cityId);s.cityName=c?c.name:'—';
+  const r=DB.users.find(u=>u.id===s.repId);if(r)s.repName=r.name;return s}
+const shopCountOfRep=id=>DB.shops.filter(s=>s.repId===id).length;
+const shopCountOfType=id=>DB.shops.filter(s=>s.typeId===id).length;
+const shopCountOfCity=id=>DB.shops.filter(s=>s.cityId===id).length;
+
+/* ---------- واجهة API (تحاكي خادمًا حقيقيًا) ---------- */
+const api={
+  async login(id,pw){
+    await delay(220);
+    const key=String(id).trim().toLowerCase();
+    const u=DB.users.find(x=>x.username.toLowerCase()===key);
+    if(!u)return{ok:false,msg:'بيانات الدخول غير صحيحة — تحقق من الاسم وكلمة المرور'};
+    if(await hashPw(pw,u.salt)!==u.passwordHash)return{ok:false,msg:'بيانات الدخول غير صحيحة — تحقق من الاسم وكلمة المرور'};
+    if(u.status!=='active')return{ok:false,msg:'هذا الحساب معطّل حاليًا — يرجى مراجعة مدير النظام'};
+    u.lastLoginAt=Date.now();save();
+    log(u.id,'login','user',u.id,`تسجيل دخول إلى النظام (${u.role==='admin'?'مدير':'مندوب'})`);
+    setSession(u);return{ok:true,user:pubUser(u)};
+  },
+  async logout(u){log(u.id,'logout','user',u.id,'تسجيل خروج من النظام');clearSession()},
+};
+/* ============================================================
+   الحالة والموجّه
+   ============================================================ */
+const state={user:null,shopFilters:null,repQ:'',lastReport:null};
+let shellBuiltFor=null,leafletMaps=[];
+
+function parseHash(){const h=location.hash.replace(/^#\/?/,'');const p=h.split('/').filter(Boolean);return{name:p[0]||'',args:p.slice(1)}}
+const GUARD={dash:null,reps:['admin'],shops:null,'shop-new':null,'shop-view':null,'shop-edit':null,reports:['admin'],activity:['admin'],settings:['admin'],admins:['admin'],account:null};
+const TITLES={dash:'الرئيسية',reps:'إدارة المندوبين',shops:'المحلات التجارية','shop-new':'إضافة محل جديد','shop-view':'تفاصيل المحل','shop-edit':'تعديل المحل',reports:'التقارير والتحليلات',activity:'سجل نشاط المندوبين',settings:'إعدادات النظام',admins:'المدراء والصلاحيات',account:'حسابي',forbidden:'غير مصرح'};
+const navKey=r=>(['shop-new','shop-view','shop-edit'].includes(r)?'shops':r);
+
+/* ---------- نظام صلاحيات المدراء ----------
+   المدير العام (isSuper) يملك كل الصلاحيات ولا يمكن تعديله أو حذفه.
+   المدراء الآخرون يدخلون بصلاحيات محددة تتحكم بالصفحات والأقسام المتاحة لهم. */
+const PERM_CATALOG=[
+  {k:'reps',ic:'users',t:'إدارة المندوبين',d:'الوصول إلى صفحة المندوبين: إضافة وتعديل وتعطيل وحذف حسابات المندوبين'},
+  {k:'reports',ic:'file',t:'التقارير والتحليلات',d:'الاطلاع على التقارير والرسوم البيانية وتصديرها وطباعتها'},
+  {k:'activity',ic:'act',t:'سجل النشاط',d:'متابعة سجل عمليات النظام لجميع المستخدمين'},
+  {k:'settings',ic:'gear',t:'إعدادات النظام',d:'إدارة أنواع النشاط التجاري والمحافظات والمدن'},
+  {k:'shop_delete',ic:'trash',t:'حذف المحلات',d:'السماح بحذف المحلات المسجلة من صفحة تفاصيل المحل'},
+  {k:'admins',ic:'shield',t:'إدارة المدراء',d:'إضافة مدراء جدد وتحديد صلاحياتهم — لا يمكن لأحد منح صلاحية لا يملكها'},
+];
+const PAGE_PERM={reps:'reps',reports:'reports',activity:'activity',settings:'settings',admins:'admins'};
+function can(pk){
+  const u=me();
+  if(!u||u.role!=='admin')return false;
+  if(u.isSuper)return true;
+  const f=DB.users.find(x=>x.id===u.id);
+  return !!(f&&f.permissions&&f.permissions[pk]);
+}
+const permTitlesOf=u=>u.isSuper?['كل الصلاحيات']:PERM_CATALOG.filter(p=>u.permissions&&u.permissions[p.k]).map(p=>p.t);
+
+function navLinksFor(u){
+  if(u.role==='admin'){
+    const links=[
+      {k:'dash',ic:'grid',t:'الرئيسية',h:'#/dash'},
+      {sep:'إدارة الميدان'},
+      {k:'shops',ic:'bag',t:'المحلات التجارية',h:'#/shops'},
+    ];
+    if(can('reps'))links.push({k:'reps',ic:'users',t:'المندوبون',h:'#/reps'});
+    if(can('reports'))links.push({k:'reports',ic:'file',t:'التقارير',h:'#/reports'});
+    if(can('activity'))links.push({k:'activity',ic:'act',t:'سجل النشاط',h:'#/activity'});
+    links.push({sep:'النظام'});
+    if(can('admins'))links.push({k:'admins',ic:'shield',t:'المدراء والصلاحيات',h:'#/admins'});
+    if(can('settings'))links.push({k:'settings',ic:'gear',t:'الإعدادات',h:'#/settings'});
+    links.push({k:'account',ic:'user',t:'حسابي',h:'#/account'});
+    return links;
+  }
+  return[
+    {k:'dash',ic:'grid',t:'الرئيسية',h:'#/dash'},
+    {k:'shops',ic:'bag',t:'محلاتي',h:'#/shops'},
+    {k:'account',ic:'user',t:'حسابي',h:'#/account'},
+  ];
+}
+function buildShell(){
+  const u=state.user;shellBuiltFor=u.id;
+  const links=navLinksFor(u);
+  const sideH=`<a href="#" class="snav" style="pointer-events:none">`;// noop
+  $('#app').innerHTML=`
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><span class="brand-mark">${icon('pin')}</span><div><b>ميدان</b><small>إدارة المندوبين الميدانيين</small></div></div>
+    <nav class="snav">${links.map(l=>l.sep?`<div class="sep">${l.sep}</div>`:`<a href="${l.h}" data-nav="${l.k}">${icon(l.ic)}<span>${l.t}</span></a>`).join('')}</nav>
+    <div class="side-foot">
+      <div class="user-card">
+        <span class="avat">${esc(u.name[0])}</span>
+        <div style="min-width:0"><b class="ell">${esc(u.name)}</b><small>${u.role==='admin'?(u.isSuper?'مدير النظام':'مدير'):'مندوب ميداني'}${u.assignedGov?' — '+esc(u.assignedGov):''}</small></div>
+        <button class="icon-btn" id="sideLogout" title="تسجيل الخروج" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);color:var(--side-ink)">${icon('logout')}</button>
+      </div>
+    </div>
+  </aside>
+  <div class="backdrop" id="bd"></div>
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn only-m" id="menuBtn">${icon('menu')}</button>
+      <h1 class="page-title" id="ptitle"></h1>
+      <div class="top-actions">
+        ${u.role==='admin'?`<a class="btn primary sm only-d" href="#/shop-new">${icon('plus')}محل جديد</a>`:`<a class="btn primary sm" href="#/shop-new">${icon('plus')}محل</a>`}
+        <button class="icon-btn" id="themeBtn" title="الوضع الليلي">${icon(document.documentElement.dataset.theme==='dark'?'sun':'moon')}</button>
+        <span class="user-chip"><span class="avat">${esc(u.name[0])}</span><span class="ell only-d" style="max-width:110px">${esc(u.name)}</span></span>
+      </div>
+    </header>
+    <main class="content" id="page"></main>
+  </div>
+  <nav class="bottomnav"><div class="bnav" id="bnav"></div></nav>`;
+  /* شريط التنقل السفلي */
+  let bn=[];
+  if(u.role==='admin'){
+    bn=[{k:'dash',ic:'grid',t:'الرئيسية',h:'#/dash'},{k:'shops',ic:'bag',t:'المحلات',h:'#/shops'}];
+    if(can('reps'))bn.push({k:'reps',ic:'users',t:'المندوبون',h:'#/reps'});
+    if(can('reports'))bn.push({k:'reports',ic:'file',t:'التقارير',h:'#/reports'});
+    if(can('activity')||can('settings')||can('admins'))bn.push({more:1,ic:'dots',t:'المزيد'});
+    else bn.push({k:'account',ic:'user',t:'حسابي',h:'#/account'});
+  }
+  else bn=[{k:'dash',ic:'grid',t:'الرئيسية',h:'#/dash'},{k:'shops',ic:'bag',t:'محلاتي',h:'#/shops'},{fab:1,ic:'plus',t:'إضافة',h:'#/shop-new'},{k:'account',ic:'user',t:'حسابي',h:'#/account'},{more:1,ic:'dots',t:'المزيد'}];
+  $('#bnav').innerHTML=bn.map(b=>b.fab?`<a class="fab" href="${b.h}" data-nav="shop-new">${icon(b.ic)}<span>${b.t}</span></a>`
+    :b.more?`<button data-more="1">${icon(b.ic)}<span>${b.t}</span></button>`
+    :`<a href="${b.h}" data-nav="${b.k}">${icon(b.ic)}<span>${b.t}</span></a>`).join('');
+  /* الأحداث */
+  $('#menuBtn').onclick=()=>{$('#sidebar').classList.add('open');$('#bd').classList.add('show')};
+  $('#bd').onclick=closeSidebar;
+  $('#sideLogout').onclick=doLogout;
+  $('#themeBtn').onclick=toggleTheme;
+  $('#bnav').addEventListener('click',e=>{if(e.target.closest('[data-more]'))openMoreSheet()});
+  $$('.sidebar .snav a').forEach(a=>a.addEventListener('click',closeSidebar));
+}
+function closeSidebar(){$('#sidebar')?.classList.remove('open');$('#bd')?.classList.remove('show')}
+function openMoreSheet(){
+  const u=state.user;
+  const adminItems=u.role==='admin'?[
+    ...(can('activity')?[{ic:'act',t:'سجل نشاط المندوبين',href:'#/activity',id:'close'}]:[]),
+    ...(can('settings')?[{ic:'gear',t:'إعدادات النظام',href:'#/settings',id:'close'}]:[]),
+    ...(can('admins')?[{ic:'shield',t:'المدراء والصلاحيات',href:'#/admins',id:'close'}]:[]),
+  ]:[];
+  openSheet([
+    ...adminItems,
+    {ic:'user',t:'حسابي',href:'#/account',id:'close'},
+    {ic:document.documentElement.dataset.theme==='dark'?'sun':'moon',t:'تبديل الوضع الليلي / النهاري',id:'theme'},
+    {ic:'logout',t:'تسجيل الخروج',id:'logout',end:'<span style="color:var(--danger)"></span>'},
+  ].map(i=>({...i})));
+  const ov=$('.ovl:last-child');
+  ov.addEventListener('click',async e=>{
+    const a=e.target.closest('.sheet-item');if(!a)return;
+    if(a.dataset.x==='theme'){toggleTheme();ov.remove()}
+    if(a.dataset.x==='logout'){ov.remove();doLogout()}
+  });
+}
+async function doLogout(){
+  if(!state.user)return;
+  await api.logout(state.user);state.user=null;shellBuiltFor=null;
+  toast('تم تسجيل الخروج بنجاح');
+  location.hash='#/login';
+}
+function markActive(name){const k=navKey(name);$$('[data-nav]').forEach(a=>a.classList.toggle('on',a.dataset.nav===k))}
+function setTopTitle(name){const t=$('#ptitle');if(t)t.textContent=TITLES[name]||'ميدان'}
+
+async function route(){
+  const{name,args}=parseHash();window.scrollTo(0,0);
+  if(!state.user){
+    if(name==='login'||name===''){await PageLogin($('#app'));return}
+    location.hash='#/login';return;
+  }
+  if(name==='login'||name===''){location.hash='#/dash';return}
+  if(!(name in GUARD)){location.hash='#/dash';return}
+  $('#app').classList.remove('authwrap');
+  if(shellBuiltFor!==state.user.id)buildShell();
+  markActive(name);setTopTitle(name);closeSidebar();
+  const page=$('#page');
+  if(GUARD[name]&&!GUARD[name].includes(state.user.role)){
+    page.innerHTML=`<div class="card empty">${icon('lock')}<b>غير مصرح لك بالوصول</b><p>هذه الصفحة مخصصة لمدير النظام فقط.</p><div style="margin-top:16px"><a class="btn primary" href="#/dash">العودة للرئيسية</a></div></div>`;return;
+  }
+  if(PAGE_PERM[name]&&!can(PAGE_PERM[name])){
+    page.innerHTML=`<div class="card empty">${icon('lock')}<b>لا تملك صلاحية الوصول</b><p>لم يمنحك مدير النظام صلاحية الدخول إلى هذه الصفحة — يرجى مراجعة «المدراء والصلاحيات».</p><div style="margin-top:16px"><a class="btn primary" href="#/dash">العودة للرئيسية</a></div></div>`;return;
+  }
+  page.innerHTML=`<div style="display:grid;gap:14px"><div class="skel" style="height:44px;width:230px"></div><div class="skel" style="height:120px"></div><div class="skel" style="height:320px"></div></div>`;
+  try{
+    if(name==='dash')await(state.user.role==='admin'?PageDashAdmin:PageDashRep)(page);
+    else if(name==='reps')await PageReps(page);
+    else if(name==='shops')await PageShops(page);
+    else if(name==='shop-new')await PageShopForm(page,null);
+    else if(name==='shop-view')await PageShopView(page,args[0]);
+    else if(name==='shop-edit')await PageShopForm(page,args[0]);
+    else if(name==='reports')await PageReports(page);
+    else if(name==='activity')await PageActivity(page);
+    else if(name==='settings')await PageSettings(page);
+    else if(name==='admins')await PageAdmins(page);
+    else if(name==='account')await PageAccount(page);
+  }catch(err){console.error(err);page.innerHTML=`<div class="card empty">${icon('alert')}<b>حدث خطأ غير متوقع</b><p>${esc(err.message||'')}</p></div>`}
+}
+window.addEventListener('hashchange',route);
+
+/* ---------- الوضع الليلي ---------- */
+function applyTheme(t){document.documentElement.dataset.theme=t;localStorage.setItem('midan_theme',t);
+  const b=$('#themeBtn');if(b)b.innerHTML=icon(t==='dark'?'sun':'moon')}
+function toggleTheme(){applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark')}
+
+/* ---------- مساعدات النماذج ---------- */
+function fld(o){
+  const inner=o.opts!==undefined
+    ?`<select id="${o.id}" class="inp">${o.opts.map(x=>`<option value="${esc(x.v)}"${String(x.v)===String(o.val)?' selected':''}>${esc(x.t)}</option>`).join('')}</select>`
+    :o.ta?`<textarea id="${o.id}" class="inp" rows="${o.rows||3}" placeholder="${esc(o.ph||'')}">${esc(o.val||'')}</textarea>`
+    :`<input id="${o.id}" class="inp" type="${o.type||'text'}" value="${esc(o.val??'')}" placeholder="${esc(o.ph||'')}"${o.attrs?` ${o.attrs}`:''} dir="${o.dir||'rtl'}">`;
+  return`<div class="field${o.half?' half':''}" id="fw-${o.id}"><label for="${o.id}">${esc(o.l)}${o.req?' <i class="req">*</i>':''}</label>${inner}<div class="ferr" id="fe-${o.id}"></div>${o.hint?`<div class="fhint">${o.hint}</div>`:''}</div>`;
+}
+const getV=id=>{const n=document.getElementById(id);return n?String(n.value).trim():''};
+function setErr(id,msg){document.getElementById('fw-'+id)?.classList.add('has-err');const e=document.getElementById('fe-'+id);if(e)e.textContent=msg}
+function clearErrs(ids){ids.forEach(n=>{document.getElementById('fw-'+n)?.classList.remove('has-err');const e=document.getElementById('fe-'+n);if(e)e.textContent=''})}
+const govOpts=(sel='')=>[{v:'',t:'كل المحافظات'},...DB.governorates.map(g=>({v:g.id,t:g.name}))];
+const govOptsReq=(sel='')=>[{v:'',t:sel||'اختر المحافظة'},...DB.governorates.map(g=>({v:g.id,t:g.name}))];
+const typeOpts=(req,sel)=>req?[{v:'',t:'اختر نوع النشاط'},...DB.types.filter(t=>t.status==='active').map(t=>({v:t.id,t:t.name}))]:[{v:'',t:'كل الأنشطة'},...DB.types.map(t=>({v:t.id,t:t.name+(t.status!=='active'?' (معطّل)':'')}))];
+const repOpts=(req)=>req?[{v:'',t:'اختر المندوب المسؤول'},...DB.users.filter(u=>u.role==='rep'&&u.status==='active').map(u=>({v:u.id,t:u.name}))]:[{v:'',t:'كل المندوبين'},...DB.users.filter(u=>u.role==='rep').map(u=>({v:u.id,t:u.name+(u.status!=='active'?' (معطّل)':'')}))];
+function fillCitySel(selId,govId,val,allLabel){
+  const el2=document.getElementById(selId);if(!el2)return;
+  const cs=DB.cities.filter(c=>c.govId===govId).sort((a,b)=>a.name.localeCompare(b.name,'ar'));
+  el2.innerHTML=(allLabel?`<option value="">${allLabel}</option>`:`<option value="">اختر المدينة / القضاء</option>`)
+    +cs.map(c=>`<option value="${c.id}"${c.id===val?' selected':''}>${esc(c.name)}</option>`).join('');
+  el2.disabled=!govId&&!allLabel;
+}
+function animateBars(root){requestAnimationFrame(()=>requestAnimationFrame(()=>root.querySelectorAll('.tr i').forEach(b=>b.style.width=b.dataset.w+'%')));
+  requestAnimationFrame(()=>requestAnimationFrame(()=>root.querySelectorAll('.lb-row .bg').forEach(b=>b.style.width=b.dataset.w+'%')))}
+
+/* ============================================================
+   صفحة تسجيل الدخول
+   ============================================================ */
+async function PageLogin(root){
+  document.getElementById('app').classList.add('authwrap');
+  root.innerHTML=`
+  <div class="auth">
+    <div class="auth-form">
+      <div class="auth-card" id="authcard">
+        <div class="auth-logo"><span class="brand-mark" style="background:var(--primary);color:#fff;width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center">${icon('pin')}</span>
+          <div><b style="font-size:21px;display:block">ميدان</b><small class="muted">إدارة المندوبين والمحلات التجارية — العراق</small></div></div>
+        <h2 style="font-size:18px;margin-bottom:4px">تسجيل الدخول</h2>
+        <p class="muted" style="margin-bottom:18px">استخدم اسم المستخدم وكلمة المرور للدخول إلى النظام.</p>
+        <form id="loginForm" novalidate>
+          ${fld({l:'اسم المستخدم',id:'lg-user',req:1,ph:'admin',dir:'ltr'})}
+          ${fld({l:'كلمة المرور',id:'lg-pass',req:1,type:'password',ph:'••••••••',dir:'ltr'})}
+          <button type="submit" class="btn primary lg" id="lg-btn" style="width:100%;margin-top:6px">دخول إلى النظام</button>
+        </form>
+        <div style="margin-top:26px;border-top:1px dashed var(--line);padding-top:16px">
+          <p class="muted" style="font-weight:700;margin-bottom:2px">حسابات تجريبية — انقر للتعبئة الفورية</p>
+          <button class="demo-acc" data-u="admin" data-p="admin123"><span class="avat">${icon('gear')}</span><span><b>مدير النظام</b><small>admin / admin123</small></span></button>
+          <button class="demo-acc" data-u="ahmed" data-p="rep123"><span class="avat">${icon('bag')}</span><span><b>مندوب ميداني — أحمد الجبوري</b><small>ahmed / rep123</small></span></button>
+        </div>
+      </div>
+    </div>
+    <div class="auth-side">
+      <svg style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true"><defs><pattern id="pt" width="58" height="58" patternUnits="userSpaceOnUse"><path d="M29 7l6 16 16 6-16 6-6 16-6-16-16-6 16-6z" fill="none" stroke="rgba(255,255,255,.06)"/></pattern></defs><rect width="100%" height="100%" fill="url(#pt)"/></svg>
+      <span class="brand-mark" style="background:rgba(255,255,255,.1);color:#fff">${icon('pin')}</span>
+      <h2>سجلّ كل محل<br>أنت في الميدان.</h2>
+      <p style="font-size:14px;max-width:380px">نظام مركزي يربط المندوبين الميدانيين بإدارة العمل — من بغداد إلى البصرة، كل محل في مكانه الصحيح.</p>
+      <div style="margin-top:10px">
+        <div class="feat">${icon('bag')}<span><b style="color:#fff">تسجيل فوري للمحلات</b> — نموذج سريع مصمم للاستخدام من الهاتف أثناء التنقل، مع كشف تلقائي للمحلات المكررة.</span></div>
+        <div class="feat">${icon('file')}<span><b style="color:#fff">تقارير وتحليلات</b> — متابعة الأداء حسب المحافظة والنشاط والمندوب، وتصدير فوري إلى Excel وCSV.</span></div>
+        <div class="feat">${icon('gps')}<span><b style="color:#fff">موقع جغرافي دقيق</b> — تسجيل إحداثيات كل محل وعرضه على خريطة العراق.</span></div>
+      </div>
+      <div class="auth-stats">
+        <div><b class="tnum">${fmtNum(DB.shops.length)}</b><small>محلًا مسجلًا</small></div>
+        <div><b class="tnum">${fmtNum(DB.users.filter(u=>u.role==='rep').length)}</b><small>مندوبًا ميدانيًا</small></div>
+        <div><b class="tnum">18</b><small>محافظة عراقية</small></div>
+      </div>
+    </div>
+  </div>`;
+  $$('.demo-acc').forEach(b=>b.onclick=()=>{
+    document.getElementById('lg-user').value=b.dataset.u;
+    document.getElementById('lg-pass').value=b.dataset.p;
+    doLogin();
+  });
+  $('#loginForm').addEventListener('submit',e=>{e.preventDefault();doLogin()});
+  async function doLogin(){
+    clearErrs(['lg-user','lg-pass']);
+    const id=getV('lg-user'),pw=getV('lg-pass');
+    if(!id){setErr('lg-user','أدخل اسم المستخدم');return}
+    if(!pw){setErr('lg-pass','أدخل كلمة المرور');return}
+    const btn=$('#lg-btn');btn.disabled=true;btn.innerHTML=`<span class="spin"></span> جارٍ التحقق…`;
+    const r=await api.login(id,pw);
+    if(r.ok){state.user=r.user;toast(`مرحبًا بك، ${esc(r.user.name.split(' ')[0])}`);location.hash='#/dash'}
+    else{btn.disabled=false;btn.textContent='دخول إلى النظام';setErr('lg-pass',r.msg);$('#authcard').classList.add('shake');setTimeout(()=>$('#authcard')?.classList.remove('shake'),450)}
+  }
+}
+
+/* ============================================================
+   لوحة المدير
+   ============================================================ */
+function barChartSVG(data,{w=600,h=150}={}){
+  const max=Math.max(...data.map(d=>d.n),1);
+  const pad={t:10,b:24,l:4,r:4},iw=(w-pad.l-pad.r)/data.length,bw=Math.min(iw*.52,26);
+  let bars='',labels='';
+  data.forEach((d,i)=>{
+    const x=pad.l+i*iw+(iw-bw)/2,bh=Math.max(3,(d.n/max)*(h-pad.t-pad.b)),y=h-pad.b-bh;
+    bars+=`<rect class="bar" style="animation-delay:${i*32}ms" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="${d.hi?'var(--accent)':'var(--primary)'}"><title>${esc(d.title)}: ${d.n} محل</title></rect>`;
+    labels+=`<text x="${(x+bw/2).toFixed(1)}" y="${h-6}" font-size="9.5" fill="var(--ink3)" text-anchor="middle">${d.lbl}</text>`;
+  });
+  return`<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block" dir="ltr"><line x1="0" y1="${h-pad.b+1}" x2="${w}" y2="${h-pad.b+1}" stroke="var(--line)"/>${bars}${labels}</svg>`;
+}
+function hbars(list,cls=''){
+  const max=Math.max(...list.map(x=>x.n),1);
+  return`<div>${list.map(x=>`<div class="hbar ${cls}"><span class="ell" title="${esc(x.t)}">${esc(x.t)}</span><span class="tr"><i data-w="${(x.n/max*100).toFixed(1)}"></i></span><b>${fmtNum(x.n)}</b></div>`).join('')}</div>`;
+}
+async function PageDashAdmin(root){
+  await delay(120);
+  const S=DB.shops,now=Date.now(),d0=dayStart(now);
+  const m1=new Date();m1.setDate(1);m1.setHours(0,0,0,0);
+  const cToday=S.filter(s=>s.createdAt>=d0).length;
+  const cWeek=S.filter(s=>s.createdAt>=now-7*864e5).length;
+  const cMonth=S.filter(s=>s.createdAt>=m1.getTime()).length;
+  const reps=DB.users.filter(u=>u.role==='rep');
+  const actReps=reps.filter(u=>u.status==='active').length;
+  const covered=new Set(S.map(s=>s.govId)).size;
+  /* آخر 14 يومًا */
+  const days=[...Array(14)].map((_,i)=>{
+    const st=dayStart(now-(13-i)*864e5);
+    return{st,lbl:new Date(st).getDate(),n:S.filter(s=>s.createdAt>=st&&s.createdAt<st+864e5).length,title:fmtDate(st)};
+  });
+  const peak=Math.max(...days.map(d=>d.n),1);
+  const avg14=(S.filter(s=>s.createdAt>=d0-13*864e5).length/14).toFixed(1);
+  /* التوزيعات */
+  const perGov=DB.governorates.map(g=>({t:g.name,n:S.filter(s=>s.govId===g.id).length})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+  const perType=DB.types.map(t=>({t:t.name,n:shopCountOfType(t.id)})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+  const lb=reps.map(u=>({u,n:shopCountOfRep(u.id)})).sort((a,b)=>b.n-a.n).slice(0,5);
+  const recent=DB.logs.slice(0,7);
+  root.innerHTML=`
+  <div class="page-head"><div><h2>نظرة عامة على الميدان</h2><p class="muted">آخر تحديث: ${fmtDT(now)}</p></div>
+  <div class="head-act" style="display:flex;gap:8px"><a class="btn ghost" href="#/reports">${icon('file')}التقارير</a><a class="btn primary" href="#/shop-new">${icon('plus')}إضافة محل</a></div></div>
+  <div class="dash-grid">
+    <section class="card">
+      <div class="card-h"><b>نبض النشاط — آخر 14 يومًا</b><span class="badge acc">معدل ${avg14} محل/يوم</span></div>
+      <div style="padding:14px 18px 8px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+        <span class="pulse-big">${fmtNum(S.length)}</span><span class="muted">إجمالي المحلات المسجلة</span>
+        <span class="badge ok" style="margin-inline-start:auto">${icon('star')}أعلى يوم: ${peak} محل</span>
+      </div>
+      <div style="padding:6px 12px 12px">${barChartSVG(days)}</div>
+    </section>
+    <section class="card">
+      <div class="card-h"><b>أرقام سريعة</b></div>
+      <div style="margin-top:10px">
+        <div class="qrow"><span class="qi">${icon('users')}</span><span><b style="font-size:13.5px;display:block;color:var(--ink)">المندوبون</b><small>${actReps} نشط من ${reps.length}</small></span><b>${reps.length}</b></div>
+        <div class="qrow"><span class="qi">${icon('cal')}</span><span><b style="font-size:13.5px;display:block;color:var(--ink)">محلات اليوم</b><small>منذ بداية ${fmtDate(d0)}</small></span><b>${cToday}</b></div>
+        <div class="qrow"><span class="qi">${icon('clock')}</span><span><b style="font-size:13.5px;display:block;color:var(--ink)">آخر 7 أيام</b><small>هذا الأسبوع</small></span><b>${cWeek}</b></div>
+        <div class="qrow"><span class="qi">${icon('act')}</span><span><b style="font-size:13.5px;display:block;color:var(--ink)">هذا الشهر</b><small>منذ ${fmtDate(m1.getTime())}</small></span><b>${cMonth}</b></div>
+        <div class="qrow"><span class="qi">${icon('pin')}</span><span><b style="font-size:13.5px;display:block;color:var(--ink)">التغطية الجغرافية</b><small>محافظات بها محلات مسجلة</small></span><b>${covered}<span style="font-size:12px;color:var(--ink3)">/18</span></b></div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-h"><b>المحلات حسب المحافظة</b><a href="#/reports">تقرير كامل ←</a></div>
+      <div style="padding:10px 18px 14px;max-height:272px;overflow:auto" id="g-bars">${hbars(perGov)}</div>
+    </section>
+    <section class="card">
+      <div class="card-h"><b>الأكثر نشاطًا ميدانيًا</b><a href="#/reps">إدارة المندوبين ←</a></div>
+      <div style="margin-top:6px">
+        ${lb.map((x,i)=>`<div class="lb-row"><span class="bg" data-w="${(x.n/Math.max(lb[0].n,1)*100).toFixed(1)}"></span>
+          <span class="lb-rank ${i===0?'top':i===1?'top2':''}">${i===0?icon('trophy'):i+1}</span>
+          <div style="min-width:0"><b class="ell" style="font-size:13px;display:block">${esc(x.u.name)}</b><small class="muted ell" style="font-size:11px">${esc(x.u.assignedGov||'—')} · ${x.u.status==='active'?'نشط':'معطّل'}</small></div>
+          <b style="margin-inline-start:auto" class="tnum">${fmtNum(x.n)}</b></div>`).join('')}
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-h"><b>المحلات حسب نوع النشاط</b><a href="#/settings">إدارة الأنشطة ←</a></div>
+      <div style="padding:10px 18px 14px;max-height:250px;overflow:auto">${hbars(perType.slice(0,10),'acc')}
+        ${perType.length>10?`<p class="muted" style="padding-top:8px">+ ${perType.length-10} أنواع أخرى</p>`:''}</div>
+    </section>
+    <section class="card">
+      <div class="card-h"><b>آخر العمليات</b><a href="#/activity">السجل كاملًا ←</a></div>
+      <div class="tl">${recent.map(l=>`<div class="tli">${esc(l.details)}<small>${esc(l.userName)} · ${timeAgo(l.createdAt)}</small></div>`).join('')||'<p class="muted" style="padding:14px">لا نشاطات بعد</p>'}</div>
+    </section>
+  </div>`;
+  animateBars(root);
+}
+
+/* ============================================================
+   لوحة المندوب
+   ============================================================ */
+async function PageDashRep(root){
+  await delay(100);
+  const u=state.user;
+  const mine=DB.shops.filter(s=>s.repId===u.id).sort((a,b)=>b.createdAt-a.createdAt);
+  const d0=dayStart(Date.now());
+  const today=mine.filter(s=>s.createdAt>=d0).length;
+  const hr=new Date().getHours();
+  const greet=hr<12?'صباح الخير':hr<17?'نهارك سعيد':'مساء الخير';
+  const week=mine.filter(s=>s.createdAt>=Date.now()-7*864e5).length;
+  root.innerHTML=`
+  <div class="page-head"><div><h2>${greet}، ${esc(u.name.split(' ')[0])}</h2><p class="muted">${u.assignedGov?'منطقة العمل: '+esc(u.assignedGov)+' · ':''}${fmtDate(Date.now())}</p></div></div>
+  <a class="cta-add" href="#/shop-new" style="margin-bottom:16px">${icon('plus')} إضافة محل جديد</a>
+  <div class="stat-duo" style="margin-bottom:16px">
+    <div class="card"><small class="muted" style="font-weight:700">سجّلت اليوم</small><b>${fmtNum(today)}</b><span class="muted">محل تجاري</span></div>
+    <div class="card"><small class="muted" style="font-weight:700">إجمالي محلاتك</small><b>${fmtNum(mine.length)}</b><span class="muted">· آخر أسبوع: ${week}</span></div>
+  </div>
+  <div class="card">
+    <div class="card-h"><b>آخر المحلات التي سجّلتها</b><a href="#/shops">عرض الكل ←</a></div>
+    <div style="padding:6px 0 4px">
+      ${mine.slice(0,5).map(s=>`<div class="qrow"><span class="qi">${icon('bag')}</span>
+        <span style="min-width:0"><b class="ell" style="font-size:13.5px;display:block">${esc(s.name)}</b>
+        <small class="muted ell">${esc(s.typeName)} · ${esc(s.cityName)} · ${timeAgo(s.createdAt)}</small></span>
+        <a class="btn ghost sm" href="#/shop-view/${s.id}" style="margin-inline-start:auto">${icon('eye')}عرض</a></div>`).join('')
+        ||`<div class="empty">${icon('bag')}<b>لم تسجل أي محل بعد</b><p>ابدأ أول زيارة ميدانية وسجّل أول محل الآن.</p></div>`}
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px;padding:14px 16px;display:flex;gap:10px;align-items:center">
+    <span style="color:var(--ink3)">${icon('search')}</span>
+    <input class="inp" id="rep-quick-search" placeholder="ابحث في محلاتك بالاسم أو صاحب المحل أو الهاتف…" style="border:none;background:none;padding:4px;box-shadow:none">
+    <button class="btn soft sm" id="rep-go-search">بحث</button>
+  </div>`;
+  const q=$('#rep-quick-search');
+  $('#rep-go-search').onclick=()=>{state.shopFilters={q:q.value.trim(),gov:'',city:'',type:'',from:'',to:'',sort:'createdAt',dir:'desc',page:1,per:10};location.hash='#/shops'};
+  q.addEventListener('keydown',e=>{if(e.key==='Enter')$('#rep-go-search').click()});
+}
+
+/* ============================================================
+   إدارة المندوبين (مدير)
+   ============================================================ */
+async function PageReps(root){
+  await delay(100);
+  root.innerHTML=`
+  <div class="page-head"><div><h2>المندوبون الميدانيون</h2><p class="muted" id="rp2-count"></p></div>
+    <button class="btn primary" id="rep-new">${icon('plus')}مندوب جديد</button></div>
+  <div class="card" style="margin-bottom:16px;padding:10px 14px;display:flex;gap:10px;align-items:center">
+    <span style="color:var(--ink3)">${icon('search')}</span>
+    <input class="inp" id="rep2-q" placeholder="ابحث بالاسم أو اسم المستخدم أو الهاتف…" style="border:none;background:none;padding:4px;box-shadow:none">
+  </div>
+  <div class="card"><div class="tblwrap"><table class="tbl">
+    <thead><tr><th>المندوب</th><th>اسم المستخدم</th><th>الهاتف</th><th>منطقة العمل</th><th>المحلات</th><th>تاريخ الإنشاء</th><th>الحالة</th><th style="text-align:left">الإجراءات</th></tr></thead>
+    <tbody id="rep2-body"></tbody>
+  </table></div></div>`;
+  const draw=()=>{
+    const q=normAr(state.repQ);
+    const rows=DB.users.filter(u=>u.role==='rep')
+      .filter(u=>!q||normAr(u.name+u.username+u.phone).includes(q))
+      .sort((a,b)=>b.createdAt-a.createdAt);
+    $('#rp2-count').textContent=`${rows.length} حساب مندوب`;
+    $('#rep2-body').innerHTML=rows.map(u=>`<tr>
+      <td data-l="المندوب"><div style="display:flex;align-items:center;gap:9px"><span class="avat" style="width:31px;height:31px;font-size:12.5px">${esc(u.name[0])}</span><b>${esc(u.name)}</b></div></td>
+      <td data-l="اسم المستخدم"><span style="font-family:monospace;direction:ltr;unicode-bidi:embed">${esc(u.username)}</span></td>
+      <td data-l="الهاتف" class="tnum" style="direction:ltr;text-align:right">${esc(u.phone||'—')}</td>
+      <td data-l="منطقة العمل">${esc(u.assignedGov||'—')}</td>
+      <td data-l="المحلات"><b class="tnum">${fmtNum(shopCountOfRep(u.id))}</b></td>
+      <td data-l="تاريخ الإنشاء">${fmtDate(u.createdAt)}</td>
+      <td data-l="الحالة"><span class="badge ${u.status==='active'?'ok':'off'}">${u.status==='active'?'نشط':'معطّل'}</span></td>
+      <td class="td-act" data-l="الإجراءات"><span class="rowactions">
+        <button class="icon-btn" data-act="view" data-id="${u.id}" title="عرض التفاصيل">${icon('eye')}</button>
+        <button class="icon-btn" data-act="edit" data-id="${u.id}" title="تعديل">${icon('pencil')}</button>
+        <button class="icon-btn" data-act="toggle" data-id="${u.id}" title="${u.status==='active'?'تعطيل':'تفعيل'}">${icon('power')}</button>
+        <button class="icon-btn" data-act="reset" data-id="${u.id}" title="إعادة تعيين كلمة المرور">${icon('key')}</button>
+        <button class="icon-btn" data-act="del" data-id="${u.id}" title="حذف" style="color:var(--danger)">${icon('trash')}</button>
+      </span></td></tr>`).join('')
+      ||`<tr><td colspan="8"><div class="empty">${icon('users')}<b>لا نتائج مطابقة</b></div></td></tr>`;
+  };
+  $('#rep2-q').value=state.repQ;
+  $('#rep2-q').addEventListener('input',debounce(e=>{state.repQ=e.target.value;draw()},200));
+  $('#rep-new').onclick=()=>repFormModal(null,draw);
+  $('#rep2-body').addEventListener('click',async e=>{
+    const b=e.target.closest('[data-act]');if(!b)return;
+    const u=DB.users.find(x=>x.id===b.dataset.id);if(!u)return;
+    const act=b.dataset.act;
+    if(act==='view')return repViewModal(u);
+    if(act==='edit')return repFormModal(u,draw);
+    if(act==='toggle'){
+      const to=u.status==='active'?'disabled':'active';
+      if(await confirmDialog({title:to==='disabled'?'تعطيل الحساب':'تفعيل الحساب',danger:to==='disabled',okText:to==='disabled'?'تعطيل':'تفعيل',
+        msg:to==='disabled'?`سيُمنع <b>${esc(u.name)}</b> من تسجيل الدخول، وتبقى محلاته وبياناته كما هي.`:`سيتمكن <b>${esc(u.name)}</b> من تسجيل الدخول والعمل الميداني مجددًا.`})){
+        u.status=to;u.updatedAt=Date.now();save();
+        log(me().id,'rep_toggle','user',u.id,`${to==='disabled'?'تعطيل':'تفعيل'} حساب المندوب «${u.name}»`);
+        toast(to==='disabled'?'تم تعطيل الحساب':'تم تفعيل الحساب');draw();
+      }return;
+    }
+    if(act==='reset'){
+      const m=openModal(`<div class="modal-h"><h3>إعادة تعيين كلمة المرور</h3><button class="icon-btn m-x">${icon('x')}</button></div>
+        <div class="modal-b">${fld({l:`كلمة مرور جديدة للمندوب ${esc(u.name)}`,id:'pw-new',req:1,type:'text',dir:'ltr',hint:'6 أحرف على الأقل',val:''})}
+        <button class="btn ghost sm" id="pw-gen">${icon('key')}توليد كلمة مرور قوية</button></div>
+        <div class="modal-act"><button class="btn primary" id="pw-save">حفظ كلمة المرور</button><button class="btn ghost m-x">إلغاء</button></div>`,'sm');
+      m.ov.querySelectorAll('.m-x').forEach(x=>x.onclick=m.close);
+      $('#pw-gen').onclick=()=>{$('#pw-new').value='Md'+Math.random().toString(36).slice(2,10)};
+      $('#pw-save').onclick=async()=>{
+        const p=getV('pw-new');clearErrs(['pw-new']);
+        if(p.length<6)return setErr('pw-new','كلمة المرور 6 أحرف على الأقل');
+        u.salt=newSalt();u.passwordHash=await hashPw(p,u.salt);u.updatedAt=Date.now();save();
+        log(me().id,'rep_reset','user',u.id,`إعادة تعيين كلمة مرور المندوب «${u.name}»`);
+        m.close();toast('تم تحديث كلمة المرور بنجاح');
+      };return;
+    }
+    if(act==='del'){
+      const n=shopCountOfRep(u.id);
+      if(await confirmDialog({title:'حذف حساب المندوب',danger:1,okText:'حذف نهائي',
+        msg:`سيُحذف حساب <b>${esc(u.name)}</b> نهائيًا.<br>${n?`⚠️ لديه <b>${n}</b> محلًا مسجلًا — ستبقى المحلات ظاهرة في النظام منسوبة إلى اسمه بدون حساب مرتبط.`:'ليس لديه أي محلات مسجلة.'}`})){
+        DB.shops.forEach(s=>{if(s.repId===u.id)s.repId=null});
+        DB.representatives=DB.representatives.filter(r=>r.user_id!==u.id);
+        DB.users=DB.users.filter(x=>x.id!==u.id);save();
+        log(me().id,'rep_delete','user',u.id,`حذف حساب المندوب «${u.name}»`);
+        toast('تم حذف الحساب');draw();
+      }return;
+    }
+  });
+  draw();
+}
+function repFormModal(u,after){
+  const isNew=!u;
+  const m=openModal(`<div class="modal-h"><h3>${isNew?'إنشاء حساب مندوب جديد':'تعديل بيانات المندوب'}</h3><button class="icon-btn m-x">${icon('x')}</button></div>
+  <div class="modal-b">
+    ${fld({l:'الاسم الكامل',id:'rf-name',req:1,val:u?.name})}
+    ${fld({l:'اسم المستخدم (للدخول)',id:'rf-user',req:1,dir:'ltr',val:u?.username,hint:'أحرف إنجليزية وأرقام فقط'})}
+    <div class="grid2">${fld({l:'رقم الهاتف',id:'rf-phone',req:1,dir:'ltr',val:u?.phone,ph:'07XX XXX XXXX',half:1})}</div>
+    ${fld({l:'المحافظة / منطقة العمل',id:'rf-gov',opts:[{v:'',t:'بدون تحديد'},...DB.governorates.map(g=>({v:g.id,t:g.name}))],val:u?DB.governorates.find(g=>g.name===u.assignedGov)?.id:''})}
+    ${isNew?fld({l:'كلمة المرور الابتدائية',id:'rf-pass',req:1,dir:'ltr',val:'rep123',hint:'6 أحرف على الأقل — يُنصح بتغييرها عند أول دخول'}):''}
+  </div>
+  <div class="modal-act"><button class="btn primary" id="rf-save">${isNew?'إنشاء الحساب':'حفظ التعديلات'}</button><button class="btn ghost m-x">إلغاء</button></div>`);
+  m.ov.querySelectorAll('.m-x').forEach(x=>x.onclick=m.close);
+  $('#rf-save').onclick=async()=>{
+    clearErrs(['rf-name','rf-user','rf-pass']);
+    const name=getV('rf-name'),uname=getV('rf-user').toLowerCase(),phone=getV('rf-phone'),govId=getV('rf-gov'),pass=getV('rf-pass');
+    let bad=false;
+    if(name.length<3){setErr('rf-name','الاسم 3 أحرف على الأقل');bad=true}
+    if(!/^[a-z0-9_.]{3,20}$/.test(uname)){setErr('rf-user','اسم مستخدم غير صالح (3-20 حرفًا إنجليزيًا)');bad=true}
+    if(DB.users.some(x=>x.username.toLowerCase()===uname&&x.id!==u?.id)){setErr('rf-user','اسم المستخدم مستخدم مسبقًا');bad=true}
+    const phOk=s=>{if(!s)return false;const d=s.replace(/\D/g,'');return d.length>=10&&d.length<=11&&d.startsWith('0')};
+    if(!phOk(phone)){setErr('rf-phone','رقم عراقي صحيح مثل 07701234567');bad=true}
+    if(isNew&&pass.length<6){setErr('rf-pass','6 أحرف على الأقل');bad=true}
+    if(bad)return;
+    const govName=govId?DB.governorates.find(g=>g.id===govId).name:null;
+    if(isNew){
+      const salt=newSalt();
+      const nu={id:uid('u'),name,username:uname,phone,passwordHash:await hashPw(pass,salt),salt,role:'rep',status:'active',assignedGov:govName,createdAt:Date.now(),updatedAt:Date.now(),lastLoginAt:null};
+      DB.users.push(nu);DB.representatives.push({id:uid('rp'),user_id:nu.id,assigned_governorate:govName,created_at:Date.now()});
+      log(me().id,'rep_create','user',nu.id,`إنشاء حساب المندوب «${name}»${govName?' — '+govName:''}`);
+      toast(`تم إنشاء حساب «${esc(name)}» بنجاح`);
+    }else{
+      Object.assign(u,{name,username:uname,phone,assignedGov:govName,updatedAt:Date.now()});
+      DB.shops.forEach(s=>{if(s.repId===u.id)s.repName=name});
+      log(me().id,'rep_update','user',u.id,`تعديل بيانات المندوب «${name}»`);
+      toast('تم حفظ التعديلات');
+    }
+    save();m.close();after&&after();
+  };
+}
+function repViewModal(u){
+  const n=shopCountOfRep(u.id);
+  const shops=DB.shops.filter(s=>s.repId===u.id).sort((a,b)=>b.createdAt-a.createdAt);
+  const acts=DB.logs.filter(l=>l.userId===u.id).slice(0,6);
+  const d0=dayStart(Date.now());
+  openModal(`<div class="modal-h"><h3>ملف المندوب</h3><button class="icon-btn m-x">${icon('x')}</button></div>
+  <div class="modal-b">
+    <div style="display:flex;align-items:center;gap:13px;margin-bottom:16px">
+      <span class="avat" style="width:52px;height:52px;font-size:20px">${esc(u.name[0])}</span>
+      <div><b style="font-size:16px">${esc(u.name)}</b><br><span class="badge ${u.status==='active'?'ok':'off'}">${u.status==='active'?'نشط':'معطّل'}</span></div>
+      <div style="margin-inline-start:auto;text-align:center"><b style="font-size:22px;display:block" class="tnum">${fmtNum(n)}</b><small class="muted">محلًا مسجلًا</small></div>
+    </div>
+    <div class="drow"><span>اسم المستخدم</span><span style="font-family:monospace;direction:ltr">${esc(u.username)}</span></div>
+    <div class="drow"><span>الهاتف</span><span style="direction:ltr" class="tnum">${esc(u.phone||'—')}</span></div>
+    <div class="drow"><span>منطقة العمل</span><span>${esc(u.assignedGov||'—')}</span></div>
+    <div class="drow"><span>تاريخ الإنشاء</span><span>${fmtDate(u.createdAt)}</span></div>
+    <div class="drow"><span>آخر دخول</span><span>${u.lastLoginAt?timeAgo(u.lastLoginAt):'لم يسجل دخولًا بعد'}</span></div>
+    <div class="drow"><span>محلات اليوم</span><span>${fmtNum(shops.filter(s=>s.createdAt>=d0).length)} · هذا الأسبوع: ${fmtNum(shops.filter(s=>s.createdAt>=Date.now()-7*864e5).length)}</span></div>
+    <h3 style="font-size:13.5px;margin:18px 0 4px">آخر المحلات المسجلة</h3>
+    ${shops.slice(0,5).map(s=>`<div class="drow"><span>${fmtDate(s.createdAt)}</span><span><a href="#/shop-view/${s.id}" data-close-link>${esc(s.name)}</a> — ${esc(s.cityName)}</span></div>`).join('')||'<p class="muted">لا شيء بعد</p>'}
+    <h3 style="font-size:13.5px;margin:18px 0 4px">آخر النشاطات</h3>
+    <div class="tl">${acts.map(l=>`<div class="tli">${esc(l.details)}<small>${timeAgo(l.createdAt)}</small></div>`).join('')||'<p class="muted">لا نشاطات</p>'}</div>
+  </div>
+  <div class="modal-act"><button class="btn primary m-x">إغلاق</button></div>`,'lg')
+  .ov.querySelectorAll('[data-close-link],.m-x').forEach(x=>x.addEventListener('click',()=>x.closest('.ovl').remove()));
+}
+
+/* ============================================================
+   إدارة المدراء والصلاحيات (مدير)
+   المدير العام: يملك كل الصلاحيات — لا يُعدَّل ولا يُحذف من هنا.
+   المدير الجديد: يُمنح صلاحيات محددة تتحكم بظهور الصفحات أمامهم.
+   ============================================================ */
+async function PageAdmins(root){
+  await delay(100);
+  root.innerHTML=`
+  <div class="page-head"><div><h2>المدراء والصلاحيات</h2><p class="muted" id="ad-count"></p></div>
+    <button class="btn primary" id="ad-new">${icon('plus')}مدير جديد</button></div>
+  <div class="card" style="margin-bottom:14px;padding:13px 16px;display:flex;gap:12px;align-items:flex-start;background:var(--primary-soft);border-color:transparent">
+    <span style="color:var(--primary);flex:none;margin-top:2px">${icon('shield')}</span>
+    <div style="font-size:13px"><b>كيف يعمل نظام الصلاحيات؟</b>
+    <p class="muted" style="font-size:12.5px;margin-top:2px">المدير العام يملك جميع الصلاحيات ولا يمكن تعديله أو حذفه من هذه الصفحة. عند إضافة مدير جديد تحدد له الصلاحيات الممنوحة، فتظهر في قائمته الجانبية الصفحات المسموح بها فقط ويُمنع من فتح بقية الصفحات حتى لو كتب رابطها يدويًا. لا يستطيع أي مدير منح صلاحية لا يملكه هو نفسه. كل مدير يستطيع دائمًا الوصول إلى: الرئيسية، المحلات التجارية، إضافة المحلات، وحسابه الشخصي.</p></div>
+  </div>
+  <div class="card" style="margin-bottom:16px;padding:10px 14px;display:flex;gap:10px;align-items:center">
+    <span style="color:var(--ink3)">${icon('search')}</span>
+    <input class="inp" id="ad-q" placeholder="ابحث بالاسم أو اسم المستخدم أو الهاتف…" style="border:none;background:none;padding:4px;box-shadow:none">
+  </div>
+  <div class="card"><div class="tblwrap"><table class="tbl">
+    <thead><tr><th>المدير</th><th>اسم المستخدم</th><th>الهاتف</th><th>الصلاحيات</th><th>تاريخ الإنشاء</th><th>آخر دخول</th><th>الحالة</th><th style="text-align:left">الإجراءات</th></tr></thead>
+    <tbody id="ad-body"></tbody>
+  </table></div></div>`;
+  const draw=()=>{
+    const q=normAr(state.adminQ||'');
+    const rows=DB.users.filter(u=>u.role==='admin')
+      .filter(u=>!q||normAr(u.name+u.username+u.phone).includes(q))
+      .sort((a,b)=>(b.isSuper?1:0)-(a.isSuper?1:0)||a.createdAt-b.createdAt);
+    $('#ad-count').textContent=`${rows.length} حساب مدير — منهم مدير عام واحد`;
+    $('#ad-body').innerHTML=rows.map(u=>{
+      const self=u.id===me().id;
+      const titles=permTitlesOf(u);
+      const badges=u.isSuper
+        ?`<span class="badge acc">مدير عام — كل الصلاحيات</span>`
+        :titles.length
+          ?PERM_CATALOG.filter(p=>u.permissions[p.k]).slice(0,2).map(p=>`<span class="badge ok">${esc(p.t)}</span>`).join('')+(titles.length>2?`<span class="badge">+${titles.length-2}</span>`:'')
+          :`<span class="badge dim">بدون صلاحيات</span>`;
+      const acts=[`<button class="icon-btn" data-act="view" data-id="${u.id}" title="عرض التفاصيل">${icon('eye')}</button>`];
+      if(!u.isSuper&&!self){
+        acts.push(`<button class="icon-btn" data-act="edit" data-id="${u.id}" title="تعديل البيانات والصلاحيات">${icon('pencil')}</button>`);
+        acts.push(`<button class="icon-btn" data-act="toggle" data-id="${u.id}" title="${u.status==='active'?'تعطيل':'تفعيل'}">${icon('power')}</button>`);
+        acts.push(`<button class="icon-btn" data-act="reset" data-id="${u.id}" title="إعادة تعيين كلمة المرور">${icon('key')}</button>`);
+        acts.push(`<button class="icon-btn" data-act="del" data-id="${u.id}" title="حذف" style="color:var(--danger)">${icon('trash')}</button>`);
+      }
+      if(self)acts.push(`<span class="badge dim" title="عدّل بياناتك من صفحة حسابي">حسابك</span>`);
+      if(u.isSuper)acts.push(`<span class="badge acc" title="المدير العام لا يمكن تعديله من هنا">${icon('shield')}</span>`);
+      return`<tr>
+      <td data-l="المدير"><div style="display:flex;align-items:center;gap:9px"><span class="avat" style="width:31px;height:31px;font-size:12.5px;${u.isSuper?'background:var(--accent-soft);color:var(--accent)':''}">${esc(u.name[0])}</span><b>${esc(u.name)}</b></div></td>
+      <td data-l="اسم المستخدم"><span style="font-family:monospace;direction:ltr;unicode-bidi:embed">${esc(u.username)}</span></td>
+      <td data-l="الهاتف" class="tnum" style="direction:ltr;text-align:right">${esc(u.phone||'—')}</td>
+      <td data-l="الصلاحيات"><span style="display:inline-flex;gap:4px;flex-wrap:wrap">${badges}</span></td>
+      <td data-l="تاريخ الإنشاء">${fmtDate(u.createdAt)}</td>
+      <td data-l="آخر دخول">${u.lastLoginAt?timeAgo(u.lastLoginAt):'لم يسجل دخولًا بعد'}</td>
+      <td data-l="الحالة"><span class="badge ${u.status==='active'?'ok':'off'}">${u.status==='active'?'نشط':'معطّل'}</span></td>
+      <td class="td-act" data-l="الإجراءات"><span class="rowactions">${acts.join('')}</span></td></tr>`;
+    }).join('')||`<tr><td colspan="8"><div class="empty">${icon('shield')}<b>لا نتائج مطابقة</b></div></td></tr>`;
+  };
+  $('#ad-q').value=state.adminQ||'';
+  $('#ad-q').addEventListener('input',debounce(e=>{state.adminQ=e.target.value;draw()},200));
+  $('#ad-new').onclick=()=>adminFormModal(null,draw);
+  $('#ad-body').addEventListener('click',async e=>{
+    const b=e.target.closest('[data-act]');if(!b)return;
+    const u=DB.users.find(x=>x.id===b.dataset.id);if(!u)return;
+    const act=b.dataset.act;
+    if(act==='view')return adminViewModal(u);
+    if(act==='edit')return adminFormModal(u,draw);
+    if(act==='toggle'){
+      if(u.isSuper)return toast('لا يمكن تعطيل المدير العام','err');
+      if(u.id===me().id)return toast('لا يمكنك تعطيل حسابك الحالي','err');
+      const to=u.status==='active'?'disabled':'active';
+      if(await confirmDialog({title:to==='disabled'?'تعطيل حساب مدير':'تفعيل حساب مدير',danger:to==='disabled',okText:to==='disabled'?'تعطيل':'تفعيل',
+        msg:to==='disabled'?`سيُمنع <b>${esc(u.name)}</b> من تسجيل الدخول، وتبقى صلاحياته وبياناته محفوظة كما هي.`:`سيتمكن <b>${esc(u.name)}</b> من تسجيل الدخول مجددًا بنفس صلاحياته السابقة.`})){
+        u.status=to;u.updatedAt=Date.now();save();
+        log(me().id,'admin_toggle','user',u.id,`${to==='disabled'?'تعطيل':'تفعيل'} حساب المدير «${u.name}»`);
+        toast(to==='disabled'?'تم تعطيل الحساب':'تم تفعيل الحساب');draw();
+      }return;
+    }
+    if(act==='reset'){
+      const m=openModal(`<div class="modal-h"><h3>إعادة تعيين كلمة المرور</h3><button class="icon-btn m-x">${icon('x')}</button></div>
+        <div class="modal-b">${fld({l:`كلمة مرور جديدة للمدير ${esc(u.name)}`,id:'apw-new',req:1,type:'text',dir:'ltr',hint:'6 أحرف على الأقل',val:''})}
+        <button class="btn ghost sm" id="apw-gen">${icon('key')}توليد كلمة مرور قوية</button></div>
+        <div class="modal-act"><button class="btn primary" id="apw-save">حفظ كلمة المرور</button><button class="btn ghost m-x">إلغاء</button></div>`,'sm');
+      m.ov.querySelectorAll('.m-x').forEach(x=>x.onclick=m.close);
+      $('#apw-gen').onclick=()=>{$('#apw-new').value='Md'+Math.random().toString(36).slice(2,10)};
+      $('#apw-save').onclick=async()=>{
+        const p=getV('apw-new');clearErrs(['apw-new']);
+        if(p.length<6)return setErr('apw-new','كلمة المرور 6 أحرف على الأقل');
+        u.salt=newSalt();u.passwordHash=await hashPw(p,u.salt);u.updatedAt=Date.now();save();
+        log(me().id,'admin_reset','user',u.id,`إعادة تعيين كلمة مرور المدير «${u.name}»`);
+        m.close();toast('تم تحديث كلمة المرور بنجاح');
+      };return;
+    }
+    if(act==='del'){
+      if(u.isSuper)return toast('لا يمكن حذف المدير العام','err');
+      if(u.id===me().id)return toast('لا يمكنك حذف حسابك الحالي','err');
+      if(await confirmDialog({title:'حذف حساب المدير',danger:1,okText:'حذف نهائي',
+        msg:`سيُحذف حساب المدير <b>${esc(u.name)}</b> نهائيًا مع صلاحياته.<br>لن يتمكن من تسجيل الدخول بعد الآن، ولا يمكن التراجع عن هذه العملية.`})){
+        DB.users=DB.users.filter(x=>x.id!==u.id);save();
+        log(me().id,'admin_delete','user',u.id,`حذف حساب المدير «${u.name}»`);
+        toast('تم حذف الحساب');draw();
+      }return;
+    }
+  });
+  draw();
+}
+
+/* ---------- نافذة إضافة / تعديل مدير مع الصلاحيات ---------- */
+function adminFormModal(u,after){
+  const isNew=!u;
+  const cur=me();
+  const grantable=cur.isSuper?PERM_CATALOG:PERM_CATALOG.filter(p=>can(p.k));
+  const curPerms=u?(u.permissions||{}):{};
+  const m=openModal(`<div class="modal-h"><h3>${isNew?'إضافة مدير جديد':'تعديل بيانات المدير والصلاحيات'}</h3><button class="icon-btn m-x">${icon('x')}</button></div>
+  <div class="modal-b">
+    ${fld({l:'الاسم الكامل',id:'af-name',req:1,val:u?.name,ph:'مثال: علي حسن المحمودي'})}
+    <div class="grid2">
+      ${fld({l:'اسم المستخدم (للدخول)',id:'af-user',req:1,dir:'ltr',val:u?.username,hint:'أحرف إنجليزية وأرقام فقط',half:1})}
+      ${fld({l:'رقم الهاتف',id:'af-phone',req:1,dir:'ltr',val:u?.phone,ph:'07XX XXX XXXX',half:1})}
+    </div>
+    ${isNew?fld({l:'كلمة المرور الابتدائية',id:'af-pass',req:1,dir:'ltr',val:'admin123',hint:'6 أحرف على الأقل — يُنصح بتغييرها عند أول دخول'}):''}
+    <div class="sec-h" style="margin-top:8px;margin-bottom:6px">${icon('shield')}<b>صلاحيات الوصول</b></div>
+    <p class="fhint" style="margin:0 0 10px">${cur.isSuper?'حدّد الأقسام التي يستطيع هذا المدير الوصول إليها — الصفحات غير الممنوحة تُخفى من قائمته ويُمنع من فتحها مباشرة.':'بصفتك مديرًا لا تملك كل الصلاحيات، يمكنك منح الصلاحيات التي تملكها فقط.'}</p>
+    <div style="border:1px solid var(--line);border-radius:13px;overflow:hidden">
+      ${PERM_CATALOG.map(p=>{
+        const allowed=grantable.some(g=>g.k===p.k);
+        const on=allowed&&!!curPerms[p.k];
+        return`<div class="srow" style="padding:11px 14px;${allowed?'':'opacity:.5'}">
+          <span class="qi" style="width:32px;height:32px;border-radius:10px;background:var(--surface2);color:var(--primary);display:inline-flex;align-items:center;justify-content:center;flex:none">${icon(p.ic)}</span>
+          <div style="min-width:0;flex:1"><b style="font-size:13px">${p.t}</b><br><small class="muted" style="font-size:11.5px">${p.d}</small></div>
+          ${allowed?`<button type="button" class="sw ${on?'on':''}" data-pk="${p.k}" title="${p.t}" aria-label="${p.t}"></button>`:`<span class="badge dim">غير متاحة لك</span>`}
+        </div>`}).join('')}
+    </div>
+    <p class="fhint" style="margin-top:8px">كل مدير يستطيع دائمًا الوصول إلى: الرئيسية، المحلات التجارية، إضافة المحلات، وحسابه الشخصي — بغض النظر عن الصلاحيات أعلاه.</p>
+  </div>
+  <div class="modal-act"><button class="btn primary" id="af-save">${isNew?'إنشاء الحساب':'حفظ التعديلات'}</button><button class="btn ghost m-x">إلغاء</button></div>`,'lg');
+  m.ov.querySelectorAll('.m-x').forEach(x=>x.onclick=m.close);
+  m.ov.querySelector('.modal-b').addEventListener('click',e=>{
+    const sw=e.target.closest('.sw[data-pk]');if(sw)sw.classList.toggle('on');
+  });
+  $('#af-save').onclick=async()=>{
+    clearErrs(['af-name','af-user','af-phone','af-pass']);
+    const name=getV('af-name'),uname=getV('af-user').toLowerCase(),phone=getV('af-phone'),pass=getV('af-pass');
+    /* بناء الصلاحيات: الممنوح مني تُؤخذ من المفاتيح، وغير الممنوح تُحفظ قيمتها السابقة كما هي */
+    const permissions={};
+    PERM_CATALOG.forEach(p=>{
+      if(!grantable.some(g=>g.k===p.k)){if(curPerms[p.k])permissions[p.k]=true;return}
+      const sw=m.ov.querySelector(`.sw[data-pk="${p.k}"]`);
+      if(sw&&sw.classList.contains('on'))permissions[p.k]=true;
+    });
+    let bad=false;
+    if(name.length<3){setErr('af-name','الاسم 3 أحرف على الأقل');bad=true}
+    if(!/^[a-z0-9_.]{3,20}$/.test(uname)){setErr('af-user','اسم مستخدم غير صالح (3-20 حرفًا إنجليزيًا)');bad=true}
+    if(DB.users.some(x=>x.username.toLowerCase()===uname&&x.id!==u?.id)){setErr('af-user','اسم المستخدم مستخدم مسبقًا');bad=true}
+    const phOk=s=>{if(!s)return false;const d=s.replace(/\D/g,'');return d.length>=10&&d.length<=11&&d.startsWith('0')};
+    if(!phOk(phone)){setErr('af-phone','رقم عراقي صحيح مثل 07701234567');bad=true}
+    if(isNew&&pass.length<6){setErr('af-pass','6 أحرف على الأقل');bad=true}
+    if(bad)return;
+    const permSummary=PERM_CATALOG.filter(p=>permissions[p.k]).map(p=>p.t).join('، ')||'بدون صلاحيات إضافية';
+    if(isNew){
+      const salt=newSalt();
+      const nu={id:uid('u'),name,username:uname,phone,passwordHash:await hashPw(pass,salt),salt,role:'admin',status:'active',isSuper:false,permissions,assignedGov:null,createdAt:Date.now(),updatedAt:Date.now(),lastLoginAt:null};
+      DB.users.push(nu);
+      log(me().id,'admin_create','user',nu.id,`إنشاء حساب مدير «${name}» — الصلاحيات: ${permSummary}`);
+      toast(`تم إنشاء حساب المدير «${esc(name)}» بنجاح`);
+    }else{
+      if(u.isSuper)return m.close();
+      Object.assign(u,{name,username:uname,phone,permissions,updatedAt:Date.now()});
+      log(me().id,'admin_update','user',u.id,`تعديل بيانات وصلاحيات المدير «${name}» — الصلاحيات: ${permSummary}`);
+      toast('تم حفظ التعديلات');
+    }
+    save();m.close();after&&after();
+  };
+}
+
+/* ---------- نافذة ملف المدير ---------- */
+function adminViewModal(u){
+  const acts=DB.logs.filter(l=>l.userId===u.id).slice(0,6);
+  const icS='ic-xs';
+  openModal(`<div class="modal-h"><h3>ملف المدير</h3><button class="icon-btn m-x">${icon('x')}</button></div>
+  <div class="modal-b">
+    <div style="display:flex;align-items:center;gap:13px;margin-bottom:16px">
+      <span class="avat" style="width:52px;height:52px;font-size:20px;${u.isSuper?'background:var(--accent-soft);color:var(--accent)':''}">${esc(u.name[0])}</span>
+      <div><b style="font-size:16px">${esc(u.name)}</b><br><span class="badge ${u.status==='active'?'ok':'off'}">${u.status==='active'?'نشط':'معطّل'}</span> ${u.isSuper?'<span class="badge acc">مدير عام</span>':''}</div>
+    </div>
+    <div class="drow"><span>اسم المستخدم</span><span style="font-family:monospace;direction:ltr">${esc(u.username)}</span></div>
+    <div class="drow"><span>الهاتف</span><span style="direction:ltr" class="tnum">${esc(u.phone||'—')}</span></div>
+    <div class="drow"><span>تاريخ الإنشاء</span><span>${fmtDate(u.createdAt)}</span></div>
+    <div class="drow"><span>آخر دخول</span><span>${u.lastLoginAt?timeAgo(u.lastLoginAt):'لم يسجل دخولًا بعد'}</span></div>
+    <h3 style="font-size:13.5px;margin:18px 0 6px">الصلاحيات الممنوحة</h3>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;padding:2px 0 4px">
+      ${u.isSuper?`<span class="badge acc">${icon('shield',icS)}كل الصلاحيات — وصول كامل لجميع أقسام النظام</span>`
+        :PERM_CATALOG.map(p=>`<span class="badge ${u.permissions&&u.permissions[p.k]?'ok':'dim'}">${icon(p.ic,icS)}${p.t}</span>`).join('')}
+    </div>
+    <h3 style="font-size:13.5px;margin:18px 0 4px">آخر النشاطات</h3>
+    <div class="tl">${acts.map(l=>`<div class="tli">${esc(l.details)}<small>${timeAgo(l.createdAt)}</small></div>`).join('')||'<p class="muted">لا نشاطات بعد</p>'}</div>
+  </div>
+  <div class="modal-act"><button class="btn primary m-x">إغلاق</button></div>`,'lg')
+  .ov.querySelectorAll('.m-x').forEach(x=>x.addEventListener('click',()=>x.closest('.ovl').remove()));
+}
+
+/* ============================================================
+   صفحة المحلات التجارية (بحث + فلاتر + ترتيب + ترقيم + تصدير)
+   ============================================================ */
+async function PageShops(root){
+  await delay(120);
+  const isRep=me().role==='rep';
+  if(!state.shopFilters)state.shopFilters={q:'',gov:'',city:'',type:'',rep:'',from:'',to:'',sort:'createdAt',dir:'desc',page:1,per:10};
+  const F=state.shopFilters;
+  if(isRep)F.rep=me().id;
+  root.innerHTML=`
+  <div class="page-head"><div><h2>${isRep?'محلاتي المسجلة':'المحلات التجارية'}</h2><p class="muted" id="sh-count">…</p></div>
+    <a class="btn primary" href="#/shop-new">${icon('plus')}محل جديد</a></div>
+  <div class="card filters">
+    <div class="f w2" style="min-width:190px"><label>بحث فوري</label><input class="inp" id="f-q" placeholder="اسم المحل، صاحبه، الهاتف، العنوان…" value="${esc(F.q)}"></div>
+    <div class="f"><label>المحافظة</label><select class="inp" id="f-gov">${govOpts().map(o=>`<option value="${o.v}"${o.v===F.gov?' selected':''}>${o.t}</option>`).join('')}</select></div>
+    <div class="f"><label>المدينة / القضاء</label><select class="inp" id="f-city" ${F.gov?'':'disabled'}><option value="">كل المدن</option></select></div>
+    <div class="f"><label>نوع النشاط</label><select class="inp" id="f-type">${typeOpts().map(o=>`<option value="${o.v}"${o.v===F.type?' selected':''}>${esc(o.t)}</option>`).join('')}</select></div>
+    ${isRep?'':`<div class="f"><label>المندوب</label><select class="inp" id="f-rep">${repOpts().map(o=>`<option value="${o.v}"${o.v===F.rep?' selected':''}>${esc(o.t)}</option>`).join('')}</select></div>`}
+    <div class="f" style="max-width:150px"><label>من تاريخ</label><input type="date" class="inp" id="f-from" value="${F.from}"></div>
+    <div class="f" style="max-width:150px"><label>إلى تاريخ</label><input type="date" class="inp" id="f-to" value="${F.to}"></div>
+    <div class="f" style="max-width:118px;flex:none"><label>&nbsp;</label><button class="btn ghost" id="f-clear" style="width:100%">مسح الفلاتر</button></div>
+  </div>
+  <div class="card">
+    <div class="tblwrap"><table class="tbl" id="sh-table"><thead id="sh-thead"></thead><tbody id="sh-body"></tbody></table></div>
+    <div class="tfoot"><span class="muted" id="sh-range"></span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost sm" id="ex-csv">${icon('download')}تصدير CSV</button>
+        <button class="btn ghost sm" id="ex-xls">${icon('file')}تصدير Excel</button>
+        <button class="btn ghost sm" id="ex-print">${icon('printer')}طباعة</button>
+      </div></div>
+  </div>`;
+  if(F.gov)fillCitySel('f-city',F.gov,F.city,'كل المدن');
+  const cols=[
+    {k:'name',t:'اسم المحl'.replace('l','ل')},
+    {k:'owner',t:'صاحب المحل'},{k:'type',t:'النشاط'},{k:'gov',t:'المحافظة'},{k:'city',t:'المدينة'},{k:'addr',t:'العنوان'},
+    ...(isRep?[]:[{k:'rep',t:'المندوب'}]),{k:'date',t:'تاريخ الإضافة'},{k:'x',t:'الإجراءات'}
+  ];
+  const SORTABLE=['name','owner','type','gov','city','date'];
+  function computeVM(){
+    const q=normAr(F.q);
+    let list=DB.shops.filter(s=>{
+      if(isRep&&s.repId!==me().id)return false;
+      if(F.rep&&s.repId!==F.rep)return false;
+      if(F.gov&&s.govId!==F.gov)return false;
+      if(F.city&&s.cityId!==F.city)return false;
+      if(F.type&&s.typeId!==F.type)return false;
+      if(F.from&&s.createdAt<new Date(F.from+'T00:00:00').getTime())return false;
+      if(F.to&&s.createdAt>new Date(F.to+'T23:59:59').getTime())return false;
+      if(q&&!(normAr(s.name).includes(q)||normAr(s.ownerName).includes(q)||(s.phoneOwner||s.phoneShop||'').replace(/\D/g,'').includes(q.replace(/\D/g,''))&&q.replace(/\D/g,'').length>=3||normAr(s.address).includes(q)||normAr(s.repName||'').includes(q)))return false;
+      return true;
+    }).map(s=>({s,name:s.name,owner:s.ownerName,type:s.typeName,gov:s.govName,city:s.cityName,addr:s.address,rep:s.repName||'—',date:s.createdAt,dateTxt:fmtDate(s.createdAt),id:s.id}));
+    const dir=F.dir==='asc'?1:-1;
+    const key=F.sort;
+    list.sort((a,b)=>{
+      if(key==='date')return(a.date-b.date)*dir;
+      return String(a[key]).localeCompare(String(b[key]),'ar')*dir;
+    });
+    return list;
+  }
+  function thead(){
+    $('#sh-thead').innerHTML=`<tr>${cols.map(c=>SORTABLE.includes(c.k)
+      ?`<th class="sortable" data-sort="${c.k}">${c.t}<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">${F.sort===c.k?(F.dir==='asc'?'<path d="m6 15 6-6 6 6"/>':'<path d="m6 9 6 6 6-6"/>'):ICONS.sort}</svg></th>`
+      :`<th${c.k==='x'?' style="text-align:left"':''}>${c.t}</th>`).join('')}</tr>`;
+  }
+  function draw(){
+    const list=computeVM();
+    const per=F.per, total=list.length, pages=Math.max(1,Math.ceil(total/per));
+    if(F.page>pages)F.page=pages;
+    const start=(F.page-1)*per, pageItems=list.slice(start,start+per);
+    $('#sh-count').textContent=`${fmtNum(total)} محل${total?'ًا':''} مطابق للفلاتر`;
+    $('#sh-range').textContent=total?`عرض ${fmtNum(start+1)} – ${fmtNum(Math.min(start+per,total))} من ${fmtNum(total)}`:'لا نتائج';
+    thead();
+    $('#sh-body').innerHTML=pageItems.map(r=>`<tr>
+      <td data-l="اسم المحل" class="td-strong"><a href="#/shop-view/${r.id}" style="text-decoration:none;font-weight:700">${esc(r.name)}</a></td>
+      <td data-l="صاحب المحل">${esc(r.owner)}</td>
+      <td data-l="النشاط"><span class="badge acc">${esc(r.type)}</span></td>
+      <td data-l="المحافظة">${esc(r.gov)}</td>
+      <td data-l="المدينة">${esc(r.city)}</td>
+      <td data-l="العنوان" style="max-width:220px"><span class="ell" style="display:inline-block;max-width:210px;vertical-align:middle" title="${esc(r.addr)}">${esc(r.addr)}</span></td>
+      ${isRep?'':`<td data-l="المندوب">${esc(r.rep)}</td>`}
+      <td data-l="تاريخ الإضافة">${r.dateTxt}<br><small class="muted">${fmtTime(r.date)}</small></td>
+      <td class="td-act" data-l="الإجراءات"><span class="rowactions">
+        <a class="icon-btn" href="#/shop-view/${r.id}" title="عرض">${icon('eye')}</a>
+        <a class="icon-btn" href="#/shop-edit/${r.id}" title="تعديل">${icon('pencil')}</a>
+        ${isRep?'':`<button class="icon-btn" data-act="del" data-id="${r.id}" title="حذف" style="color:var(--danger)">${icon('trash')}</button>`}
+      </span></td></tr>`).join('')
+      ||`<tr><td colspan="${cols.length}"><div class="empty">${icon('search')}<b>لا توجد محلات مطابقة</b><p>جرّب تعديل الفلاتر أو البحث بكلمة أخرى.</p><button class="btn soft sm" id="empty-clear" style="margin-top:10px">مسح كل الفلاتر</button></div></td></tr>`;
+    /* الترقيم */
+    const old=$('#pgn-wrap');if(old)old.remove();
+    if(pages>1){
+      let btns='';
+      const win=[];for(let p=1;p<=pages;p++){if(p===1||p===pages||Math.abs(p-F.page)<=2)win.push(p)}
+      let prev=0;win.forEach(p=>{if(p-prev>1)btns+='<span class="dots">…</span>';btns+=`<button data-p="${p}" class="${p===F.page?'on':''}">${p}</button>`;prev=p});
+      const n=el(`<div class="pgn" id="pgn-wrap"><button data-p="prev" ${F.page===1?'disabled':''}>السابق</button>${btns}<button data-p="next" ${F.page===pages?'disabled':''}>التالي</button>
+        <select class="inp" id="pgn-per" style="width:auto;padding:5px 9px;font-size:12px;margin-inline-start:8px">${[10,25,50].map(x=>`<option value="${x}"${per===x?' selected':''}>${x} / صفحة</option>`).join('')}</select></div>`);
+      $('#sh-table').closest('.card').appendChild(n);
+      n.addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(!b||b.disabled)return;
+        if(b.dataset.p==='prev')F.page--;else if(b.dataset.p==='next')F.page++;else F.page=+b.dataset.p;draw()});
+      $('#pgn-per').onchange=e=>{F.per=+e.target.value;F.page=1;draw()};
+    }
+    const ec=$('#empty-clear');if(ec)ec.onclick=clearFilters;
+    animateBars($('#page'));
+  }
+  function clearFilters(){Object.assign(F,{q:'',gov:'',city:'',type:'',rep:isRep?me().id:'',from:'',to:'',page:1});reRender();
+    function reRender(){PageShops(root)}}
+  /* ربط الأحداث */
+  $('#f-q').addEventListener('input',debounce(e=>{F.q=e.target.value;F.page=1;draw()},220));
+  $('#f-gov').onchange=e=>{F.gov=e.target.value;F.city='';F.page=1;fillCitySel('f-city',F.gov,'','كل المدن');draw()};
+  $('#f-city').onchange=e=>{F.city=e.target.value;F.page=1;draw()};
+  $('#f-type').onchange=e=>{F.type=e.target.value;F.page=1;draw()};
+  const fr=$('#f-rep');if(fr)fr.onchange=e=>{F.rep=e.target.value;F.page=1;draw()};
+  $('#f-from').onchange=e=>{F.from=e.target.value;F.page=1;draw()};
+  $('#f-to').onchange=e=>{F.to=e.target.value;F.page=1;draw()};
+  $('#f-clear').onclick=clearFilters;
+  $('#sh-thead').addEventListener('click',e=>{const th=e.target.closest('[data-sort]');if(!th)return;
+    if(F.sort===th.dataset.sort)F.dir=F.dir==='asc'?'desc':'asc';else{F.sort=th.dataset.sort;F.dir='asc'}draw()});
+  $('#sh-body').addEventListener('click',async e=>{
+    const b=e.target.closest('[data-act="del"]');if(!b)return;
+    const s=DB.shops.find(x=>x.id===b.dataset.id);if(!s)return;
+    if(await confirmDialog({title:'حذف المحل التجاري',danger:1,okText:'حذف نهائي',
+      msg:`سيُحذف محل <b>«${esc(s.name)}»</b> (${esc(s.cityName)} — ${esc(s.govName)}) نهائيًا من قاعدة البيانات.<br>يُنصح بالتأكد من صحة العملية قبل المتابعة.`})){
+      DB.shops=DB.shops.filter(x=>x.id!==s.id);save();
+      log(me().id,'shop_delete','shop',s.id,`حذف المحل «${s.name}» — ${s.govName}/${s.cityName}`);
+      toast('تم حذف المحل بنجاح');draw();
+    }
+  });
+  /* التصدير (يحترم الفلاتر الحالية) */
+  const EXP_COLS=[{k:'name',t:'اسم المحل'},{k:'owner',t:'صاحب المحل'},{k:'type',t:'نوع النشاط'},{k:'gov',t:'المحافظة'},{k:'city',t:'المدينة / القضاء'},{k:'addr',t:'العنوان'},{k:'phoneOwner',t:'هاتف الصاحب'},{k:'phoneShop',t:'هاتف المحل'},{k:'rep',t:'المندوب'},{k:'dateTxt',t:'تاريخ الإضافة'},{k:'notes',t:'ملاحظات'}];
+  const expVM=()=>computeVM().map(r=>{const s=r.s;return{...r,phoneOwner:s.phoneOwner||'',phoneShop:s.phoneShop||'',notes:s.notes||''}});
+  const stamp=isoDay(Date.now());
+  $('#ex-csv').onclick=()=>{const rows=expVM();exportCSV(EXP_COLS,rows,`محلات-ميدان-${stamp}`);
+    log(me().id,'export','shop',null,`تصدير ${rows.length} سجل محلات إلى CSV`);toast(`تم تصدير ${rows.length} سجلًا بصيغة CSV`)};
+  $('#ex-xls').onclick=()=>{const rows=expVM();exportXLS(EXP_COLS,rows,`محلات-ميدان-${stamp}`,'المحلات التجارية');
+    log(me().id,'export','shop',null,`تصدير ${rows.length} سجل محلات إلى Excel`);toast(`تم تصدير ${rows.length} سجلًا بصيغة Excel`)};
+  $('#ex-print').onclick=()=>{const rows=expVM();printTable(EXP_COLS,rows,'قائمة المحلات التجارية',`نتائج مطابقة للفلاتر — ${rows.length} سجل — ${fmtDate(Date.now())}`);
+    log(me().id,'print','shop',null,`طباعة قائمة المحلات (${rows.length} سجل)`)};
+  draw();
+}
+
+/* ============================================================
+   نموذج إضافة / تعديل محل (مع كشف التكرار و GPS والصورة)
+   ============================================================ */
+function findDupes(name,govId,phone,owner,excludeId){
+  const nName=normAr(name);if(nName.length<3)return[];
+  const ph=phonesOnly(phone),ow=normAr(owner);
+  const out=[];
+  for(const s of DB.shops){
+    if(s.id===excludeId)continue;
+    const ns=sim(nName,normAr(s.name));if(ns<.72)continue;
+    let score=ns*2;
+    const govM=!!govId&&s.govId===govId;if(govM)score+=.8;
+    const phM=!!ph&&((ph&&ph===phonesOnly(s.phoneOwner))||ph===phonesOnly(s.phoneShop));if(phM)score+=1.6;
+    const owM=!!ow&&sim(ow,normAr(s.ownerName))>=.85;if(owM)score+=.5;
+    const sure=ns>=.92&&(govM||phM);
+    out.push({s,ns,score,sure});
+  }
+  return out.filter(x=>x.score>=2.25).sort((a,b)=>b.score-a.score).slice(0,6);
+}
+function compressImage(file,maxW=760,q=.72){
+  return new Promise(res=>{
+    const rd=new FileReader();
+    rd.onload=()=>{const img=new Image();img.onload=()=>{
+      const sc=Math.min(1,maxW/img.width),w=Math.round(img.width*sc),h=Math.round(img.height*sc);
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      res(c.toDataURL('image/jpeg',q));};img.src=rd.result;};
+    rd.readAsDataURL(file);
+  });
+}
+async function PageShopForm(root,editId){
+  await delay(85);
+  const isRep=me().role==='rep';
+  const shop=editId?DB.shops.find(s=>s.id===editId):null;
+  if(editId&&!shop){root.innerHTML=`<div class="card empty">${icon('alert')}<b>المحل غير موجود</b></div>`;return}
+  if(shop&&isRep&&shop.repId!==me().id){root.innerHTML=`<div class="card empty">${icon('lock')}<b>غير مصرح</b><p>لا يمكنك تعديل محلات سجّلها مندوب آخر.</p></div>`;return}
+  let imgUrl=shop?.image||null, dupOverride=false, curSure=false;
+  const isEdit=!!shop;
+  root.innerHTML=`
+  <div class="page-head"><div>
+    <a class="backlink" href="${isEdit?'#/shop-view/'+shop.id:'#/shops'}">${icon('chevR')}رجوع</a>
+    <h2>${isEdit?'تعديل بيانات المحل':'إضافة محل جديد'}</h2>
+    <p class="muted">${isEdit?'حدّث البيانات الميدانية للمحل':'سجّل بيانات المحل بسرعة — الحقول المعلّمة بـ * إجبارية'}</p></div></div>
+  <div id="dup-zone"></div>
+  <form id="shopForm" novalidate>
+    <div class="card form-sec">
+      <div class="sec-h">${icon('bag')}<b>معلومات المحل</b></div>
+      <div class="grid2">
+        ${fld({l:'اسم المحل التجاري',id:'sf-name',req:1,ph:'مثال: بقالة البركة',val:shop?.name})}
+        ${fld({l:'اسم صاحب المحل',id:'sf-owner',req:1,ph:'مثال: أبو كرار الجبوري',val:shop?.ownerName})}
+      </div>
+      <div class="grid2">
+        ${fld({l:'نوع العمل التجاري',id:'sf-type',req:1,opts:typeOpts(1,shop?.typeId),val:shop?.typeId})}
+        ${isRep?'':fld({l:'المندوب المُسجِّل',id:'sf-rep',req:1,opts:repOpts(1),val:shop?.repId||'',half:1})}
+      </div>
+      <div class="field" id="fw-sf-type-other" style="display:none">
+        <label for="sf-type-other">حدّد نوع النشاط التجاري <i class="req">*</i></label>
+        <input id="sf-type-other" class="inp" type="text" placeholder="مثال: محل مواد تنظيف، صرافة، ألعاب أطفال…" value="${esc(shop?.customType||'')}">
+        <div class="ferr" id="fe-sf-type-other"></div>
+        <div class="fhint">يظهر هذا الحقل فقط عند اختيار «نشاط تجاري آخر» — اكتب اسم النشاط بدقة.</div>
+      </div>
+    </div>
+    <div class="card form-sec">
+      <div class="sec-h">${icon('pin')}<b>الموقع</b></div>
+      <div class="grid2">
+        ${fld({l:'المحافظة',id:'sf-gov',req:1,opts:govOptsReq(),val:shop?.govId})}
+        ${fld({l:'المدينة / القضاء',id:'sf-city',req:1,opts:[{v:'',t:'اختر المحافظة أولًا'}],val:shop?.cityId})}
+      </div>
+      ${fld({l:'عنوان العمل التجاري',id:'sf-addr',req:1,ta:1,ph:'الحي، الشارع، أقرب نقطة دالة…',val:shop?.address})}
+      <div class="fhint" style="margin-bottom:10px">${icon('gps')} الموقع الجغرافي (اختياري) — اضغط الزر لتسجيل إحداثيات الموقع الحالي تلقائيًا.</div>
+      <div class="gps-row">
+        <button type="button" class="btn soft" id="sf-geo" style="min-width:150px">${icon('gps')}تحديد موقعي الحالي</button>
+        ${fld({l:'Latitude',id:'sf-lat',dir:'ltr',val:shop?.latitude??'',attrs:'readonly placeholder="—"'})}
+        ${fld({l:'Longitude',id:'sf-lng',dir:'ltr',val:shop?.longitude??'',attrs:'readonly placeholder="—"'})}
+        <button type="button" class="btn ghost" id="sf-geo-x" title="مسح الإحداثيات" style="margin-top:26px">${icon('x')}</button>
+      </div>
+      <div class="fhint" id="geo-note"></div>
+    </div>
+    <div class="card form-sec">
+      <div class="sec-h">${icon('phone')}<b>معلومات إضافية</b></div>
+      <div class="grid2">
+        ${fld({l:'هاتف صاحب المحل',id:'sf-po',dir:'ltr',ph:'07XX XXX XXXX',val:shop?.phoneOwner,half:1})}
+        ${fld({l:'هاتف المحل',id:'sf-ps',dir:'ltr',ph:'07XX XXX XXXX',val:shop?.phoneShop,half:1})}
+      </div>
+      ${fld({l:'ملاحظات',id:'sf-notes',ta:1,rows:2,ph:'أي تفاصيل تساعد في الزيارة القادمة…',val:shop?.notes})}
+      <div class="field"><label>${icon('camera')} صورة للمحل (اختياري)</label>
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+          <div class="imgprev" id="sf-imgwrap" style="${imgUrl?'':'display:none'}">${imgUrl?`<img id="sf-img" src="${imgUrl}" alt="صورة المحل"><button type="button" id="sf-img-x">${icon('x')}</button>`:''}</div>
+          <div id="sf-imgempty" style="${imgUrl?'display:none':''}"><button type="button" class="btn ghost" id="sf-img-btn">${icon('camera')}إرفاق صورة من الكاميرا أو المعرض</button><div class="fhint">تُضغط الصورة تلقائيًا قبل الحفظ</div></div>
+          <input type="file" id="sf-imgfile" accept="image/*" capture="environment" hidden>
+        </div></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 10px">
+      <button type="submit" class="btn primary lg" id="sf-save">${icon('check')}${isEdit?'حفظ التعديلات':'حفظ المحل'}</button>
+      <a class="btn ghost lg" href="${isEdit?'#/shop-view/'+shop.id:'#/shops'}">إلغاء</a>
+    </div>
+  </form>`;
+  const govSel=$('#sf-gov');
+  const refreshCity=()=>fillCitySel('sf-city',govSel.value,shop?.cityId);
+  if(shop?.govId)refreshCity();
+  govSel.addEventListener('change',refreshCity);
+  /* إظهار/إخفاء حقل «نشاط تجاري آخر» حسب الاختيار */
+  const typeSel=$('#sf-type');
+  const otherWrap=$('#fw-sf-type-other');
+  const otherInput=$('#sf-type-other');
+  const syncOtherField=()=>{
+    const selName=typeSel.options[typeSel.selectedIndex]?.text;
+    const show=selName==='نشاط تجاري آخر';
+    otherWrap.style.display=show?'':'none';
+    if(!show&&otherInput){otherInput.value='';clearErrs(['sf-type-other'])}
+  };
+  typeSel.addEventListener('change',syncOtherField);
+  syncOtherField();
+  otherInput?.addEventListener('input',()=>clearErrs(['sf-type-other']));
+  /* GPS */
+  $('#sf-geo').onclick=()=>{
+    if(!navigator.geolocation)return toast('جهازك لا يدعم تحديد الموقع','warn');
+    const b=$('#sf-geo');b.disabled=true;b.innerHTML=`<span class="spin dark"></span> جارٍ التحديد…`;
+    navigator.geolocation.getCurrentPosition(p=>{
+      $('#sf-lat').value=p.coords.latitude.toFixed(6);$('#sf-lng').value=p.coords.longitude.toFixed(6);
+      $('#geo-note').textContent=`دقة التحديد: ±${Math.round(p.coords.accuracy)} متر`;
+      b.disabled=false;b.innerHTML=`${icon('gps')}تحديد موقعي الحالي`;toast('تم تسجيل الإحداثيات بنجاح');
+    },()=>{b.disabled=false;b.innerHTML=`${icon('gps')}تحديد موقعي الحالي`;toast('تعذّر تحديد الموقع — تأكد من تفعيل خدمة GPS','err')},{enableHighAccuracy:true,timeout:12000,maximumAge:30000});
+  };
+  $('#sf-geo-x').onclick=()=>{$('#sf-lat').value='';$('#sf-lng').value='';$('#geo-note').textContent=''};
+  /* الصورة */
+  $('#sf-img-btn').onclick=()=>$('#sf-imgfile').click();
+  $('#sf-imgfile').onchange=async e=>{
+    const f=e.target.files[0];if(!f)return;
+    if(!f.type.startsWith('image/'))return toast('الملف المرفق ليس صورة','err');
+    toast('جارٍ ضغط الصورة…');
+    imgUrl=await compressImage(f);
+    const w=$('#sf-imgwrap');w.style.display='';w.innerHTML=`<img id="sf-img" src="${imgUrl}" alt="صورة المحل"><button type="button" id="sf-img-x">${icon('x')}</button>`;
+    $('#sf-img-x').onclick=()=>{imgUrl=null;w.style.display='none';w.innerHTML='';$('#sf-imgempty').style.display=''};
+    $('#sf-imgempty').style.display='none';
+  };
+  if(imgUrl&&$('#sf-img-x'))$('#sf-img-x').onclick=()=>{imgUrl=null;$('#sf-imgwrap').style.display='none';$('#sf-imgwrap').innerHTML='';$('#sf-imgempty').style.display=''};
+  /* كشف التكرار */
+  const watch=debounce(()=>{
+    const dupes=findDupes(getV('sf-name'),getV('sf-gov'),getV('sf-po')||getV('sf-ps'),getV('sf-owner'),shop?.id);
+    const zone=$('#dup-zone');
+    curSure=dupes.some(d=>d.sure);
+    if(curSure)dupOverride=false;
+    if(!dupes.length){zone.innerHTML='';return}
+    const sure=dupes.some(d=>d.sure);
+    zone.innerHTML=`<div class="dup ${sure?'sure':''}">
+      <div class="dup-h">${icon(sure?'alert':'search')}${sure?'تنبيه: يوجد تطابق مؤكد مع محل مسجل مسبقًا':'محلات مشابهة مسجلة مسبقًا — تأكد قبل الإضافة'}</div>
+      <p style="font-size:12.5px">${sure?'تطابق الاسم والمحافظة/الهاتف مع سجل قائم. راجع السجلات التالية قبل الحفظ:':'حسب الاسم ومعايير الموقع والهاتف، هذه المحلات قد تكون نفسه:'}</p>
+      ${dupes.map(d=>`<div class="dup-item">
+        <b>${esc(d.s.name)}</b><span class="badge">${esc(d.s.typeName)}</span>
+        <span class="muted">${esc(d.s.govName)} / ${esc(d.s.cityName)} · ${esc(d.s.ownerName)} · ${esc(d.s.repName||'—')}</span>
+        <span class="badge ${d.sure?'off':'acc'}" style="margin-inline-start:auto">${d.sure?'تطابق مؤكد':'تشابه '+Math.round(d.ns*100)+'%'}</span>
+        <a class="btn ghost sm" href="#/shop-view/${d.s.id}">${icon('eye')}عرض</a></div>`).join('')}
+      ${sure?`<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn tdanger sm" id="dup-ovr">${icon('check')}المتابعة والإضافة على أي حال</button></div>`:''}
+    </div>`;
+    const o=$('#dup-ovr');if(o)o.onclick=()=>{dupOverride=true;o.closest('.dup').style.opacity=.55;o.disabled=true;toast('تم السماح بالحفظ — تأكد من صحة البيانات','warn')};
+    zone.scrollIntoView({behavior:'smooth',block:'nearest'});
+  },350);
+  ['sf-name','sf-gov','sf-po','sf-ps','sf-owner'].forEach(id=>document.getElementById(id).addEventListener('input',watch));
+  /* الحفظ */
+  $('#shopForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const ids=['sf-name','sf-owner','sf-type','sf-type-other','sf-gov','sf-city','sf-addr','sf-po','sf-ps'];
+    clearErrs(ids);
+    const v={name:getV('sf-name'),owner:getV('sf-owner'),type:getV('sf-type'),gov:getV('sf-gov'),city:getV('sf-city'),addr:getV('sf-addr'),po:getV('sf-po'),ps:getV('sf-ps')};
+    let bad=false;
+    if(v.name.length<3){setErr('sf-name','اسم المحل 3 أحرف على الأقل');bad=true}
+    if(v.owner.length<3){setErr('sf-owner','اسم صاحب المحل إجباري');bad=true}
+    if(!v.type){setErr('sf-type','اختر نوع النشاط');bad=true}
+    /* إذا اختار «نشاط تجاري آخر» يجب إدخال نص يدوي */
+    const otherTypeName='نشاط تجاري آخر';
+    const selTypeName=(()=>{const t=DB.types.find(x=>x.id===v.type);return t?t.name:''})();
+    const isOtherSel=selTypeName===otherTypeName;
+    const vOther=getV('sf-type-other');
+    if(isOtherSel&&vOther.length<2){setErr('sf-type-other','اكتب نوع النشاط التجاري بدقة');bad=true}
+    if(!v.gov){setErr('sf-gov','اختر المحافظة');bad=true}
+    if(!v.city){setErr('sf-city','اختر المدينة / القضاء');bad=true}
+    if(v.addr.length<5){setErr('sf-addr','اكتب عنوانًا واضحًا للوصول للمحل');bad=true}
+    const phOk=s=>{if(!s)return true;const d=s.replace(/\D/g,'');return d.length>=10&&d.length<=11&&d.startsWith('0')};
+    if(!phOk(v.po)){setErr('sf-po','رقم عراقي صحيح مثل 07701234567');bad=true}
+    if(!phOk(v.ps)){setErr('sf-ps','رقم عراقي صحيح مثل 07701234567');bad=true}
+    if(bad){toast('يرجى إكمال الحقول المطلوبة المشار إليها','warn');$('.field.has-err')?.scrollIntoView({behavior:'smooth',block:'center'});return}
+    if(curSure&&!dupOverride){toast('يوجد تطابق مؤكد مع محل مسجل — راجع التنبيه أعلى النموذج','err');$('#dup-zone').scrollIntoView({behavior:'smooth'});return}
+    const btn=$('#sf-save');btn.disabled=true;btn.innerHTML=`<span class="spin"></span> جارٍ الحفظ…`;
+    await delay(180);
+    const repId=isRep?me().id:getV('sf-rep');
+    if(!repId){btn.disabled=false;btn.innerHTML=`${icon('check')}حفظ المحل`;setErr('sf-rep','اختر المندوب المسؤول');return}
+    const base={name:v.name,ownerName:v.owner,typeId:v.type,govId:v.gov,cityId:v.city,address:v.addr,
+      phoneOwner:v.po,phoneShop:v.ps,notes:getV('sf-notes'),
+      /* حفظ النشاط المُدخل يدويًا فقط عند اختيار «نشاط تجاري آخر» */
+      customType:isOtherSel?vOther:'',
+      latitude:getV('sf-lat')?+getV('sf-lat'):null,longitude:getV('sf-lng')?+getV('sf-lng'):null,image:imgUrl};
+    if(isEdit){
+      Object.assign(shop,base,{repId,updatedAt:Date.now()});denorm(shop);save();
+      log(me().id,'shop_update','shop',shop.id,`تعديل المحل «${shop.name}» — ${shop.govName}/${shop.cityName}`);
+      toast('تم حفظ تعديلات المحل بنجاح');location.hash='#/shop-view/'+shop.id;
+    }else{
+      const s={id:uid('sh'),...base,repId,createdAt:Date.now(),updatedAt:Date.now()};
+      denorm(s);DB.shops.unshift(s);save();
+      const g=DB.governorates.find(x=>x.id===v.gov);
+      log(me().id,'shop_create','shop',s.id,`إضافة محل «${s.name}» — ${g.name}/${s.cityName}`);
+      toast(`تم تسجيل «${esc(s.name)}» بنجاح`);
+      location.hash='#/shop-view/'+s.id;
+    }
+  });
+}
+
+/* ============================================================
+   تفاصيل المحل + الخريطة
+   ============================================================ */
+async function PageShopView(root,id){
+  await delay(70);
+  const s=DB.shops.find(x=>x.id===id);
+  if(!s){root.innerHTML=`<div class="card empty">${icon('alert')}<b>المحل غير موجود</b><p>ربما تم حذفه سابقًا.</p><a class="btn primary" href="#/shops" style="margin-top:12px">عودة للمحلات</a></div>`;return}
+  if(me().role==='rep'&&s.repId!==me().id){root.innerHTML=`<div class="card empty">${icon('lock')}<b>غير مصرح</b><p>هذا المحل سجّله مندوب آخر.</p></div>`;return}
+  const canEdit=me().role==='admin'||s.repId===me().id;
+  const hasGps=s.latitude!=null&&s.longitude!=null;
+  root.innerHTML=`
+  <div class="page-head"><div>
+    <a class="backlink" href="#/shops">${icon('chevR')}رجوع إلى المحلات</a>
+    <h2>${esc(s.name)}</h2>
+    <p class="muted"><span class="badge acc">${esc(s.typeName)}</span> · أُضيف بواسطة <b>${esc(s.repName||'مندوب محذوف')}</b> · ${fmtDT(s.createdAt)}</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${canEdit?`<a class="btn soft" href="#/shop-edit/${s.id}">${icon('pencil')}تعديل</a>`:''}
+      ${me().role==='admin'&&can('shop_delete')?`<button class="btn tdanger" id="sv-del">${icon('trash')}حذف</button>`:''}
+    </div></div>
+  <div class="detail-grid">
+    <div>
+      <div class="dimg">${s.image?`<img src="${s.image}" alt="صورة ${esc(s.name)}">`:icon('img')}</div>
+      ${hasGps?`<button class="btn ghost" id="sv-copy" style="width:100%;margin-top:10px">${icon('copy')}نسخ الإحداثيات</button>`:''}
+    </div>
+    <div class="card" style="padding:18px 20px">
+      <div class="drow"><span>صاحب المحل</span><b>${esc(s.ownerName)}</b></div>
+      <div class="drow"><span>الموقع</span><span>${esc(s.govName)} — ${esc(s.cityName)}</span></div>
+      <div class="drow"><span>العنوان</span><span>${esc(s.address)}</span></div>
+      <div class="drow"><span>هاتف الصاحب</span><span style="direction:ltr">${s.phoneOwner?`<a class="btn ghost sm" href="tel:${esc(s.phoneOwner)}" style="direction:ltr">${icon('phone')}${esc(s.phoneOwner)}</a>`:'—'}</span></div>
+      <div class="drow"><span>هاتف المحل</span><span style="direction:ltr">${s.phoneShop?`<a class="btn ghost sm" href="tel:${esc(s.phoneShop)}" style="direction:ltr">${icon('phone')}${esc(s.phoneShop)}</a>`:'—'}</span></div>
+      <div class="drow"><span>الإحداثيات</span><span style="direction:ltr" class="tnum">${hasGps?`${s.latitude}, ${s.longitude}`:'غير مسجلة'}</span></div>
+      <div class="drow"><span>الملاحظات</span><span>${esc(s.notes)||'—'}</span></div>
+      <div class="drow"><span>آخر تعديل</span><span>${fmtDT(s.updatedAt)}</span></div>
+    </div>
+  </div>
+  ${hasGps?`<div class="card" style="margin-top:18px;padding:16px 18px">
+    <div class="card-h" style="padding:0 0 12px"><b>الموقع على الخريطة</b><span class="badge">${icon('pin')}${esc(s.cityName)}، ${esc(s.govName)}</span></div>
+    <div id="shopmap" dir="ltr"></div></div>`
+  :`<div class="card" style="margin-top:18px;padding:18px;text-align:center;color:var(--ink3)">${icon('gps')}<p>لا توجد إحداثيات GPS مسجلة لهذا المحل — يمكن إضافتها من صفحة التعديل.</p>${canEdit?`<a class="btn soft sm" href="#/shop-edit/${s.id}" style="margin-top:8px">${icon('pin')}إضافة الموقع الآن</a>`:''}</div>`}`;
+  if(hasGps){
+    /* Clean up any previous Leaflet maps to prevent memory leaks on navigation */
+    leafletMaps.forEach(m=>{try{m.remove()}catch(e){}});leafletMaps=[];
+    const map=L.map($('#shopmap'),{scrollWheelZoom:false}).setView([s.latitude,s.longitude],15);
+    leafletMaps.push(map);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© مساهمو OpenStreetMap',maxZoom:19}).addTo(map);
+    L.marker([s.latitude,s.longitude],{icon:L.divIcon({className:'pinmark',html:'<span class="pin-dot"></span>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(map)
+      .bindPopup(`<b style="font-size:13px">${esc(s.name)}</b><br><span style="font-size:11px">${esc(s.ownerName)} — ${esc(s.cityName)}</span>`).openPopup();
+    setTimeout(()=>map.invalidateSize(),250);
+    $('#sv-copy').onclick=async()=>{try{await navigator.clipboard.writeText(`${s.latitude}, ${s.longitude}`);toast('تم نسخ الإحداثيات — الصقها في خرائط الهاتف')}catch(e){toast('تعذّر النسخ','err')}};
+  }
+  const del=$('#sv-del');
+  if(del)del.onclick=async()=>{
+    if(await confirmDialog({title:'حذف المحل التجاري',danger:1,okText:'حذف نهائي',msg:`سيُحذف محل <b>«${esc(s.name)}»</b> نهائيًا.`})){
+      DB.shops=DB.shops.filter(x=>x.id!==s.id);save();
+      log(me().id,'shop_delete','shop',s.id,`حذف المحل «${s.name}» — ${s.govName}/${s.cityName}`);
+      toast('تم حذف المحل');location.hash='#/shops';
+    }
+  };
+}
+
+/* ============================================================
+   التقارير (مدير)
+   ============================================================ */
+async function PageReports(root){
+  await delay(100);
+  const t=new Date(),defFrom=isoDay(new Date(t.getFullYear(),t.getMonth(),1)),defTo=isoDay(t);
+  root.innerHTML=`
+  <div class="page-head"><div><h2>التقارير والتحليلات</h2><p class="muted">حدّد الفترة والفلاتر ثم أنشئ التقرير — التصدير يحترم نفس الفلاتر.</p></div></div>
+  <div class="card filters">
+    <div class="f"><label>نوع التقرير</label><select class="inp" id="rp-mode">
+      <option value="detail">تفصيلي — قائمة المحلات</option>
+      <option value="byGov">تجميعي حسب المحافظة</option>
+      <option value="byType">تجميعي حسب نوع النشاط</option>
+      <option value="byRep">تجميعي حسب المندوب</option>
+      <option value="perf">أداء المندوبين خلال الفترة</option>
+      <option value="time">التقرير الزمني (يومي/شهري)</option></select></div>
+    <div class="f" style="max-width:155px"><label>من تاريخ</label><input type="date" class="inp" id="rp-from" value="${defFrom}"></div>
+    <div class="f" style="max-width:155px"><label>إلى تاريخ</label><input type="date" class="inp" id="rp-to" value="${defTo}"></div>
+    <div class="f"><label>المحافظة</label><select class="inp" id="rp-gov">${govOpts().map(o=>`<option value="${o.v}">${o.t}</option>`).join('')}</select></div>
+    <div class="f"><label>المندوب</label><select class="inp" id="rp-rep">${repOpts().map(o=>`<option value="${o.v}">${esc(o.t)}</option>`).join('')}</select></div>
+    <div class="f"><label>نوع النشاط</label><select class="inp" id="rp-type">${typeOpts().map(o=>`<option value="${o.v}">${esc(o.t)}</option>`).join('')}</select></div>
+    <div class="f" style="max-width:140px;flex:none"><label>&nbsp;</label><button class="btn primary" id="rp-run" style="width:100%">${icon('file')}إنشاء التقرير</button></div>
+  </div>
+  <div id="rp-out"><div class="card empty">${icon('file')}<b>لم يُنشأ تقرير بعد</b><p>اضبط الفلاتر أعلاه واضغط «إنشاء التقرير».</p></div></div>`;
+  $('#rp-run').onclick=()=>{
+    const f={mode:$('#rp-mode').value,from:$('#rp-from').value,to:$('#rp-to').value,gov:$('#rp-gov').value,rep:$('#rp-rep').value,type:$('#rp-type').value};
+    const from=f.from?new Date(f.from+'T00:00:00').getTime():0;
+    const to=f.to?new Date(f.to+'T23:59:59').getTime():Infinity;
+    let list=DB.shops.filter(s=>s.createdAt>=from&&s.createdAt<=to);
+    if(f.gov)list=list.filter(s=>s.govId===f.gov);
+    if(f.rep)list=list.filter(s=>s.repId===f.rep);
+    if(f.type)list=list.filter(s=>s.typeId===f.type);
+    const built=buildRows(f.mode,list,from,to);state.lastReport={f,from,to,list,...built};
+    renderReport($('#rp-out'),state.lastReport);
+    if(list.length===0)toast('لا توجد بيانات مطابقة للفلاتر المحددة','warn');
+  };
+}
+function buildRows(mode,list,from,to){
+  const pct=(n,d)=>d?Math.round(n/d*100)+'%':'0%';
+  const base={name:n=>n.name,owner:n=>n.ownerName,type:n=>n.typeName,gov:n=>n.govName,city:n=>n.cityName,addr:n=>n.address,rep:n=>n.repName||'—',phone:n=>n.phoneOwner||n.phoneShop||'—',date:n=>fmtDate(n.createdAt)};
+  if(mode==='detail')return{cols:[{k:'name',t:'اسم المحل'},{k:'owner',t:'صاحب المحل'},{k:'type',t:'النشاط'},{k:'gov',t:'المحافظة'},{k:'city',t:'المدينة'},{k:'addr',t:'العنوان'},{k:'rep',t:'المندوب'},{k:'date',t:'التاريخ'}],
+    rows:list.slice(0,300).map(n=>({name:n.name,owner:n.ownerName,type:n.typeName,gov:n.govName,city:n.cityName,addr:n.address,rep:n.repName||'—',phone:n.phoneOwner||n.phoneShop||'—',date:fmtDate(n.createdAt)})),all:list.length,cut:list.length>300};
+  const grp=(keyF,title)=>{
+    const m=new Map();
+    list.forEach(s=>{const k=keyF(s);m.set(k,(m.get(k)||0)+1)});
+    const arr=[...m.entries()].map(([t,n])=>({t,n})).sort((a,b)=>b.n-a.n);
+    return{cols:[{k:'t',t:title},{k:'n',t:'عدد المحلات',num:1},{k:'p',t:'النسبة'}],rows:arr.map(x=>({...x,p:pct(x.n,list.length)})),chart:arr};
+  };
+  if(mode==='byGov')return grp(s=>s.govName,'المحافظة');
+  if(mode==='byType')return grp(s=>s.typeName,'نوع النشاط');
+  if(mode==='byRep'){
+    const m=new Map();
+    list.forEach(s=>{const k=s.repName||'—';m.set(k,(m.get(k)||0)+1)});
+    const arr=[...m.entries()].map(([t,n])=>({t,n,total:shopCountOfRep(DB.users.find(u=>u.name===t)?.id)})).sort((a,b)=>b.n-a.n);
+    return{cols:[{k:'t',t:'المندوب'},{k:'n',t:'محلات الفترة',num:1},{k:'total',t:'إجمالي محلاته',num:1},{k:'p',t:'حصته من الفترة'}],rows:arr.map(x=>({...x,p:pct(x.n,list.length)})),chart:arr};
+  }
+  if(mode==='perf'){
+    const reps=DB.users.filter(u=>u.role==='rep');
+    const rows=reps.map(u=>{
+      const mine=list.filter(s=>s.repId===u.id);
+      const last=mine.length?Math.max(...mine.map(s=>s.createdAt)):null;
+      const days=Math.max(1,Math.ceil(((to===Infinity?Date.now():to)-from)/864e5)||1);
+      return{t:u.name,st:u.status,n:mine.length,total:shopCountOfRep(u.id),avg:(mine.length/days).toFixed(1),last:last?fmtDate(last):'—'};
+    }).sort((a,b)=>b.n-a.n);
+    return{cols:[{k:'t',t:'المندوب'},{k:'st',t:'الحالة'},{k:'n',t:'محلات الفترة',num:1},{k:'avg',t:'معدل يومي',num:1},{k:'total',t:'الإجمالي الكلي',num:1},{k:'last',t:'آخر إضافة'}],rows,chart:rows.map(r=>({t:r.t,n:r.n}))};
+  }
+  /* الزمني */
+  const span=(to===Infinity?Date.now():to)-from,days=Math.ceil(span/864e5);
+  const daily=days<=62;
+  const m=new Map();
+  list.forEach(s=>{const k=daily?isoDay(s.createdAt):isoDay(s.createdAt).slice(0,7);m.set(k,(m.get(k)||0)+1)});
+  const arr=[...m.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+  return{cols:[{k:'t',t:daily?'اليوم':'الشهر'},{k:'n',t:'عدد المحلات المضافة',num:1}],rows:arr.map(([t,n])=>({t,n})),chart:arr.map(([t,n])=>({t,n})),daily};
+}
+function renderReport(out,R){
+  const{f,list}=R;
+  const fl=[];
+  if(f.from)fl.push('من '+fmtDate(new Date(f.from+'T00:00:00').getTime()));
+  if(f.to)fl.push('إلى '+fmtDate(new Date(f.to+'T23:59:59').getTime()));
+  if(f.gov)fl.push('محافظة '+DB.governorates.find(g=>g.id===f.gov).name);
+  if(f.rep)fl.push('مندوب: '+(DB.users.find(u=>u.id===f.rep)?.name||''));
+  if(f.type)fl.push('نشاط: '+(DB.types.find(t=>t.id===f.type)?.name||''));
+  const modes={detail:'تقرير تفصيلي',byGov:'حسب المحافظة',byType:'حسب النشاط',byRep:'حسب المندوب',perf:'أداء المندوبين',time:'تقرير زمني'};
+  const topGov=(k)=>{const m={};list.forEach(s=>m[s[k]]=(m[s[k]]||0)+1);const e=Object.entries(m).sort((a,b)=>b[1]-a[1])[0];return e?e[0]:'—'};
+  const contributors=new Set(list.map(s=>s.repId).filter(Boolean)).size;
+  const days=Math.max(1,Math.ceil(((R.to===Infinity?Date.now():R.to)-R.from)/864e5)||1);
+  const MODE_R={detail:{k:'name',t:'اسم المحل'},byGov:{k:'t',t:'المحافظة'},byType:{k:'t',t:'النشاط'},byRep:{k:'t',t:'المندوب'},perf:{k:'t',t:'المندوب'},time:{k:'t',t:'الفترة'}};
+  out.innerHTML=`
+  <div class="card" style="padding:18px 20px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+      <b style="font-size:16px">${modes[f.mode]}</b><span class="badge acc">${fl.join(' · ')||'كل الفترات'}</span></div>
+    <div class="stat-duo" style="margin-top:14px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
+      <div style="border:1px solid var(--line);border-radius:12px;padding:12px 14px"><small class="muted">إجمالي المحلات</small><b style="font-size:22px;display:block" class="tnum">${fmtNum(list.length)}</b></div>
+      <div style="border:1px solid var(--line);border-radius:12px;padding:12px 14px"><small class="muted">مندوبون مساهمون</small><b style="font-size:22px;display:block" class="tnum">${contributors}</b></div>
+      <div style="border:1px solid var(--line);border-radius:12px;padding:12px 14px"><small class="muted">الأعلى تكرارًا</small><b style="font-size:14.5px;display:block">${esc(topGov(MODE_R[f.mode].k==='name'?'govName':(MODE_R[f.mode].k==='t'?'govName':'govName')))}</b></div>
+      <div style="border:1px solid var(--line);border-radius:12px;padding:12px 14px"><small class="muted">المعدل اليومي</small><b style="font-size:22px;display:block" class="tnum">${(list.length/days).toFixed(1)}</b></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+      <button class="btn ghost sm" id="rr-csv">${icon('download')}تصدير CSV</button>
+      <button class="btn ghost sm" id="rr-xls">${icon('file')}تصدير Excel</button>
+      <button class="btn ghost sm" id="rr-print">${icon('printer')}طباعة التقرير</button>
+    </div>
+  </div>
+  ${R.chart&&R.chart.length>1?`<div class="card" style="padding:16px 18px;margin-bottom:16px"><div class="card-h" style="padding:0 0 8px"><b>التوزيع البصري</b></div>${hbars(R.chart.slice(0,12).map(x=>({t:x.t,n:x.n})))}</div>`:''}
+  ${f.mode==='perf'&&R.chart?`<div class="card" style="margin-bottom:16px"><div class="card-h"><b>ترتيب المندوبين في الفترة</b></div>
+    <div>${R.rows.map((r,i)=>`<div class="lb-row"><span class="bg" data-w="${(r.n/Math.max(R.rows[0].n,1)*100).toFixed(1)}"></span><span class="lb-rank ${i===0?'top':i===1?'top2':''}">${i+1}</span>
+    <div><b style="font-size:13px">${esc(r.t)}</b> ${r.st!=='active'?'<span class="badge off">معطّل</span>':''}<br><small class="muted">الإجمالي الكلي: ${fmtNum(r.total)}</small></div><b style="margin-inline-start:auto" class="tnum">${fmtNum(r.n)}</b></div>`).join('')}</div></div>`:''}
+  <div class="card"><div class="tblwrap"><table class="tbl">
+    <thead><tr>${R.cols.map(c=>`<th${c.num?' style="text-align:left"':''}>${c.t}</th>`).join('')}</tr></thead>
+    <tbody>${R.rows.map(r=>`<tr>${R.cols.map(c=>`<td${c.num?' style="text-align:left;font-weight:700"':''}>${esc(r[c.k]??'')}</td>`).join('')}</tr>`).join('')||`<tr><td colspan="${R.cols.length}"><div class="empty">${icon('search')}<b>لا بيانات مطابقة</b></div></td></tr>`}</tbody>
+  </table></div>
+  ${R.cut?`<div class="tfoot"><span class="muted">يُعرض أول 300 سجل — التصدير يشمل كامل ${fmtNum(R.all)} سجلًا</span></div>`:''}</div>`;
+  animateBars(out);
+  const cols=R.cols.map(c=>({k:c.k,t:c.t}));
+  $('#rr-csv').onclick=()=>{exportCSV(cols,R.rows,`تقرير-ميدan-${isoDay(Date.now())}`.replace('an-','ان-'));log(me().id,'export','report',null,`تصدير ${modes[f.mode]} إلى CSV (${R.rows.length} صف)`);toast('تم تصدير التقرير إلى CSV')};
+  $('#rr-xls').onclick=()=>{exportXLS(cols,R.rows,`تقرير-ميدان-${isoDay(Date.now())}`,modes[f.mode]);log(me().id,'export','report',null,`تصدير ${modes[f.mode]} إلى Excel (${R.rows.length} صف)`);toast('تم تصدير التقرير إلى Excel')};
+  $('#rr-print').onclick=()=>{printTable(cols,R.rows,'ميدان — '+modes[f.mode],fl.join(' · ')+(fl.length?' — ':'')+`${list.length} محلًا`);log(me().id,'print','report',null,`طباعة ${modes[f.mode]}`)};
+}
+
+/* ============================================================
+   سجل النشاط (مدير)
+   ============================================================ */
+async function PageActivity(root){
+  await delay(85);
+  const F={act:'',user:'',q:'',page:1,per:15};
+  const actions=[...new Set(DB.logs.map(l=>l.action))];
+  const users=[...new Set(DB.logs.map(l=>l.userName))];
+  root.innerHTML=`
+  <div class="page-head"><div><h2>سجل نشاط المندوبين</h2><p class="muted">كل عملية مهمة في النظام مسجلة بالمستخدم والوقت والبيانات المتأثرة.</p></div></div>
+  <div class="card filters">
+    <div class="f w2"><label>بحث في التفاصيل</label><input class="inp" id="lg-q" placeholder="ابحث في وصف العمليات…"></div>
+    <div class="f"><label>نوع العملية</label><select class="inp" id="lg-act"><option value="">كل العمليات</option>${actions.map(a=>`<option value="${a}">${ACTION_L[a]?ACTION_L[a][0]:a}</option>`).join('')}</select></div>
+    <div class="f"><label>المستخدم</label><select class="inp" id="lg-user"><option value="">كل المستخدمين</option>${users.map(u=>`<option value="${esc(u)}">${esc(u)}</option>`).join('')}</select></div>
+  </div>
+  <div class="card"><div class="tblwrap"><table class="tbl">
+    <thead><tr><th>الوقت</th><th>المستخدم</th><th>العملية</th><th>التفاصيل والسجل المتأثر</th></tr></thead>
+    <tbody id="lg-body"></tbody></table></div>
+    <div class="tfoot"><span class="muted" id="lg-count"></span><span></span></div>
+  </div>`;
+  function draw(){
+    const q=normAr(F.q);
+    let list=DB.logs.filter(l=>{
+      if(F.act&&l.action!==F.act)return false;
+      if(F.user&&l.userName!==F.user)return false;
+      if(q&&!normAr(l.details+l.userName).includes(q))return false;
+      return true;
+    });
+    const pages=Math.max(1,Math.ceil(list.length/F.per));
+    if(F.page>pages)F.page=pages;
+    const items=list.slice((F.page-1)*F.per,F.page*F.per);
+    $('#lg-count').textContent=`${fmtNum(list.length)} عملية مسجلة`;
+    $('#lg-body').innerHTML=items.map(l=>{const al=ACTION_L[l.action]||[l.action,'badge'];return`<tr>
+      <td data-l="الوقت">${fmtDate(l.createdAt)}<br><small class="muted">${fmtTime(l.createdAt)} · ${timeAgo(l.createdAt)}</small></td>
+      <td data-l="المستخدم"><b>${esc(l.userName)}</b></td>
+      <td data-l="العملية"><span class="${al[1]}">${al[0]}</span></td>
+      <td data-l="التفاصيل">${esc(l.details)}</td></tr>`}).join('')
+      ||`<tr><td colspan="4"><div class="empty">${icon('act')}<b>لا عمليات مطابقة</b></div></td></tr>`;
+    let pg='';const old=$('#lg-pgn');if(old)old.remove();
+    if(pages>1){
+      for(let p=1;p<=pages&&p<=12;p++)pg+=`<button data-p="${p}" class="${p===F.page?'on':''}">${p}</button>`;
+      if(pages>12)pg+='<span class="dots">…</span>';
+      const n=el(`<div class="pgn" id="lg-pgn"><button data-p="prev" ${F.page===1?'disabled':''}>السابق</button>${pg}<button data-p="next" ${F.page===pages?'disabled':''}>التالي</button></div>`);
+      $('#lg-pgn')?.remove();$('#lg-body').closest('.card').appendChild(n);
+      n.onclick=e=>{const b=e.target.closest('[data-p]');if(!b||b.disabled)return;
+        if(b.dataset.p==='prev')F.page--;else if(b.dataset.p==='next')F.page++;else F.page=+b.dataset.p;draw()};
+    }
+  }
+  $('#lg-q').addEventListener('input',debounce(e=>{F.q=e.target.value;F.page=1;draw()},200));
+  $('#lg-act').onchange=e=>{F.act=e.target.value;F.page=1;draw()};
+  $('#lg-user').onchange=e=>{F.user=e.target.value;F.page=1;draw()};
+  draw();
+}
+
+/* ============================================================
+   الإعدادات — إدارة الأنواع والمحافظات والمدن (مدير) [نسخة مُصحّحة]
+   ============================================================ */
+async function PageSettings(root){
+  await delay(80);
+  let tab=localStorage.getItem('midan_settab')||'types';
+  root.innerHTML=`
+  <div class="page-head"><div><h2>إعدادات النظام</h2><p class="muted">إدارة الأنواع التجارية والمحافظات والمدن — التغييرات تنعكس فورًا على النماذج والتقارير.</p></div></div>
+  <div class="tabs"><button data-tab="types">أنواع النشاط التجاري</button><button data-tab="govs">المحافظات والمدن</button></div>
+  <div id="set-body"></div>`;
+  $$('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;localStorage.setItem('midan_settab',tab);draw()});
+
+  /* رسائل الخطأ داخل النافذة نفسها — تمنع تعارض المعرّفات بين النوافذ */
+  const mErr=(q,id,msg)=>{q('#fw-'+id).classList.add('has-err');q('#fe-'+id).textContent=msg};
+  const mClear=(q,id)=>{q('#fw-'+id).classList.remove('has-err');q('#fe-'+id).textContent=''};
+
+  function draw(){
+    $$('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+    if(tab==='types')drawTypes();else drawGovs();
+  }
+
+  /* ---------- أنواع النشاط ---------- */
+  function drawTypes(){
+    $('#set-body').innerHTML=`
+    <div class="card" id="types-card"><div class="tfoot" style="border-bottom:1px solid var(--line)">
+      <span class="muted">الأنواع المعطّلة لا تظهر في نماذج إضافة المحلات، وتبقى بياناتها القديمة سليمة.</span>
+      <button class="btn primary sm" id="bt-new">${icon('plus')}نوع جديد</button></div>
+      <div>${DB.types.map(t=>{const n=shopCountOfType(t.id);return`<div class="srow">
+        <span class="qi" style="width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:inline-flex;align-items:center;justify-content:center">${icon('bag')}</span>
+        <div style="min-width:0"><b>${esc(t.name)}</b><br><small class="muted">${fmtNum(n)} محلًا مسجلًا</small></div>
+        <div style="margin-inline-start:auto;display:flex;align-items:center;gap:12px">
+          <span class="badge ${t.status==='active'?'ok':'off'}">${t.status==='active'?'مفعّل':'معطّل'}</span>
+          <button class="sw ${t.status==='active'?'on':''}" data-tg="${t.id}" title="تفعيل / تعطيل"></button>
+          <button class="icon-btn" data-rn="${t.id}" title="إعادة تسمية">${icon('pencil')}</button>
+        </div></div>`}).join('')}</div></div>`;
+    $('#bt-new').onclick=()=>typeModal(null);
+    /* الإصلاح الجوهري: الربط على types-card الذي يُعاد إنشاؤه مع كل رسم
+       بدل الحاوية الثابتة set-body — فلا تتراكم المستمعات إطلاقًا */
+    $('#types-card').addEventListener('click',async e=>{
+      const tg=e.target.closest('[data-tg]');
+      if(tg){const t=DB.types.find(x=>x.id===tg.dataset.tg);
+        t.status=t.status==='active'?'disabled':'active';save();
+        log(me().id,'type_toggle','type',t.id,`${t.status==='active'?'تفعيل':'تعطيل'} نوع النشاط «${t.name}»`);
+        draw();return}
+      const rn=e.target.closest('[data-rn]');
+      if(rn)typeModal(DB.types.find(x=>x.id===rn.dataset.rn));
+    });
+  }
+
+  function typeModal(t){
+    const isNew=!t;
+    const m=openModal(`<div class="modal-h"><h3>${isNew?'إضافة نوع نشاط':'تعديل نوع النشاط'}</h3><button class="icon-btn m-x">${icon('x')}</button></div>
+      <div class="modal-b">${fld({l:'اسم النوع التجاري',id:'ty-name',req:1,val:t?.name,ph:'مثال: محل مواد تنظيف'})}</div>
+      <div class="modal-act"><button class="btn primary" id="ty-save">حفظ</button><button class="btn ghost m-x">إلغاء</button></div>`,'sm');
+    m.ov.querySelectorAll('.m-x').forEach(x=>x.onclick=m.close);
+    const q=s=>m.ov.querySelector(s); /* البحث داخل النافذة فقط */
+    q('#ty-save').onclick=()=>{
+      const n=q('#ty-name').value.trim();
+      mClear(q,'ty-name');
+      if(n.length<2)return mErr(q,'ty-name','أدخل اسمًا صحيحًا');
+      if(DB.types.some(x=>normAr(x.name)===normAr(n)&&x.id!==t?.id))return mErr(q,'ty-name','هذا النوع موجود مسبقًا');
+      if(isNew){const nt={id:uid('bt'),name:n,status:'active',createdAt:Date.now()};DB.types.push(nt);
+        log(me().id,'type_create','type',nt.id,`إضافة نوع النشاط «${n}»`);toast('تم إضافة النوع')}
+      else{t.name=n;DB.shops.forEach(s=>{if(s.typeId===t.id)s.typeName=n});
+        log(me().id,'type_update','type',t.id,`تعديل نوع النشاط إلى «${n}»`);toast('تم حفظ التعديل')}
+      save();m.close();draw();
+    };
+  }
+
+  /* ---------- المحافظات والمدن ---------- */
+  function drawGovs(){
+    $('#set-body').innerHTML=`
+    <div class="card"><div class="tfoot" style="border-bottom:1px solid var(--line)">
+      <span class="muted">لا يمكن حذف محافظة أو مدينة بها محلات مسجلة — حماية لسلامة البيانات.</span>
+      <button class="btn primary sm" id="gv-new">${icon('plus')}محافظة جديدة</button></div>
+      <div id="gv-list">${DB.governorates.map(g=>{
+        const cities=DB.cities.filter(c=>c.govId===g.id);
+        const n=DB.shops.filter(s=>s.govId===g.id).length;
+        return`<details class="accx"><summary class="acc-h">${icon('pin')}<b>${esc(g.name)}</b>
+          <span class="badge">${cities.length} مدينة/قضاء</span><span class="badge ok">${fmtNum(n)} محل</span>
+          <span style="margin-inline-start:auto;color:var(--ink3)">${icon('chevD')}</span></summary>
+          <div class="acc-b">
+            ${cities.sort((a,b)=>a.name.localeCompare(b.name,'ar')).map(c=>`<div class="srow" style="padding:9px 14px">
+              <b style="font-size:13px">${esc(c.name)}</b><small class="muted">${fmtNum(shopCountOfCity(c.id))} محلًا</small>
+              <div style="margin-inline-start:auto;display:flex;gap:6px">
+                <button class="icon-btn" data-cr="${c.id}" title="إعادة تسمية" style="width:29px;height:29px">${icon('pencil')}</button>
+                <button class="icon-btn" data-cd="${c.id}" title="حذف" style="width:29px;height:29px;color:var(--danger)">${icon('trash')}</button></div></div>`).join('')}
+            <div style="padding:8px 12px 14px"><button class="btn soft sm" data-ca="${g.id}">${icon('plus')}إضافة مدينة / قضاء</button></div>
+          </div></details>`}).join('')}</div></div>`;
+    $('#gv-new').onclick=()=>{
+      const m=openModal(`<div class="modal-h"><h3>إضافة محافظة</h3><button class="icon-btn m-x">${icon('x')}</button></div>
+        <div class="modal-b">${fld({l:'اسم المحافظة',id:'gv-name',req:1})}</div>
+        <div class="modal-act"><button class="btn primary" id="gv-save">إضافة</button><button class="btn ghost m-x">إلغاء</button></div>`,'sm');
+      m.ov.querySelectorAll('.m-x').forEach(x=>x.onclick=m.close);
+      const q=s=>m.ov.querySelector(s);
+      q('#gv-save').onclick=()=>{const n=q('#gv-name').value.trim();mClear(q,'gv-name');
+        if(n.length<2)return mErr(q,'gv-name','أدخل اسمًا صحيحًا');
+        if(DB.governorates.some(g=>normAr(g.name)===normAr(n)))return mErr(q,'gv-name','المحافظة موجودة مسبقًا');
+        DB.governorates.push({id:uid('gov'),name:n,createdAt:Date.now()});
+        log(me().id,'gov_create','governorate',null,`إضافة محافظة «${n}»`);save();m.close();toast('تم إضافة المحافظة');draw()};
+    };
+    $('#gv-list').addEventListener('click',async e=>{
+      const ca=e.target.closest('[data-ca]');
+      if(ca){const g=DB.governorates.find(x=>x.id===ca.dataset.ca);
+        const m=openModal(`<div class="modal-h"><h3>إضافة مدينة / قضاء إلى ${esc(g.name)}</h3><button class="icon-btn m-x">${icon('x')}</button></div>
+          <div class="modal-b">${fld({l:'اسم المدينة أو القضاء',id:'ct-name',req:1})}</div>
+          <div class="modal-act"><button class="btn primary" id="ct-save">إضافة</button><button class="btn ghost m-x">إلغاء</button></div>`,'sm');
+        m.ov.querySelectorAll('.m-x').forEach(x=>x.onclick=m.close);
+        const q=s=>m.ov.querySelector(s);
+        q('#ct-save').onclick=()=>{const n=q('#ct-name').value.trim();mClear(q,'ct-name');
+          if(n.length<2)return mErr(q,'ct-name','أدخل اسمًا صحيحًا');
+          DB.cities.push({id:uid('city'),govId:g.id,name:n,createdAt:Date.now()});
+          log(me().id,'city_create','city',null,`إضافة «${n}» إلى محافظة ${g.name}`);save();m.close();toast('تمت الإضافة');draw()};
+        return}
+      const cr=e.target.closest('[data-cr]');
+      if(cr){const c=DB.cities.find(x=>x.id===cr.dataset.cr);
+        const m=openModal(`<div class="modal-h"><h3>إعادة تسمية المدينة</h3><button class="icon-btn m-x">${icon('x')}</button></div>
+          <div class="modal-b">${fld({l:'الاسم الجديد',id:'ct2-name',req:1,val:c.name})}</div>
+          <div class="modal-act"><button class="btn primary" id="ct2-save">حفظ</button><button class="btn ghost m-x">إلغاء</button></div>`,'sm');
+        m.ov.querySelectorAll('.m-x').forEach(x=>x.onclick=m.close);
+        const q=s=>m.ov.querySelector(s);
+        q('#ct2-save').onclick=()=>{const n=q('#ct2-name').value.trim();mClear(q,'ct2-name');
+          if(n.length<2)return mErr(q,'ct2-name','أدخل اسمًا صحيحًا');
+          c.name=n;DB.shops.forEach(s=>{if(s.cityId===c.id)s.cityName=n});
+          log(me().id,'city_update','city',c.id,`تعديل اسم المدينة إلى «${n}»`);save();m.close();toast('تم الحفظ');draw()};
+        return}
+      const cd=e.target.closest('[data-cd]');
+      if(cd){const c=DB.cities.find(x=>x.id===cd.dataset.cd);
+        const n=shopCountOfCity(c.id);
+        if(n)return toast(`لا يمكن الحذف — توجد ${n} محلًا مسجلًا في «${esc(c.name)}»`,'err');
+        if(await confirmDialog({title:'حذف مدينة',danger:1,okText:'حذف',msg:`حذف <b>«${esc(c.name)}»</b> من قائمة المدن؟`})){
+          DB.cities=DB.cities.filter(x=>x.id!==c.id);
+          log(me().id,'city_update','city',c.id,`حذف مدينة «${c.name}»`);save();toast('تم الحذف');draw()}
+      }
+    });
+  }
+  draw();
+}
+/* ============================================================
+   حسابي (تعديل بيانات المدير + تغيير كلمة المرور)
+   ============================================================ */
+async function PageAccount(root){
+  await delay(60);
+  const u=me();
+  const full=DB.users.find(x=>x.id===u.id);
+  const isAdmin=u.role==='admin';
+  root.innerHTML=`
+  <div class="page-head"><div><h2>حسابي</h2><p class="muted">بياناتك${isAdmin?' وتعديل معلومات حسابك':''} وتغيير كلمة المرور</p></div></div>
+  <div class="detail-grid">
+    <div class="card" style="padding:20px;text-align:center">
+      <span class="avat" style="width:64px;height:64px;font-size:26px;margin:0 auto 10px">${esc(u.name[0])}</span>
+      <b style="font-size:16px;display:block">${esc(u.name)}</b>
+      <p class="muted">${u.role==='admin'?(u.isSuper?'مدير النظام':'مدير'):'مندوب ميداني'+(u.assignedGov?' — '+esc(u.assignedGov):'')}</p>
+      <div style="margin-top:14px;text-align:right">
+        <div class="drow"><span>اسم المستخدم</span><span style="font-family:monospace;direction:ltr">${esc(u.username)}</span></div>
+        <div class="drow"><span>الهاتف</span><span style="direction:ltr" class="tnum">${esc(u.phone||'—')}</span></div>
+        <div class="drow"><span>عضو منذ</span><span>${fmtDate(u.createdAt)}</span></div>
+        <div class="drow"><span>آخر دخول</span><span>${u.lastLoginAt?timeAgo(u.lastLoginAt):'—'}</span></div>
+      </div>
+      <button class="btn tdanger" id="ac-logout" style="width:100%;margin-top:16px">${icon('logout')}تسجيل الخروج</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      ${isAdmin?`
+      <div class="card" style="padding:20px">
+        <div class="sec-h">${icon('pencil')}<b>تعديل معلومات الحساب</b></div>
+        <div class="fhint" style="margin-bottom:14px">يمكن للمدير فقط تعديل بيانات حسابه من هنا. التغييرات تُحفظ فورًا وتنعكس على الجلسة الحالية والشريط العلوي.</div>
+        ${fld({l:'الاسم الكامل',id:'ac-name',req:1,val:u.name,ph:'مثال: عبد الرحمن الهاشمي'})}
+        ${fld({l:'اسم المستخدم (للدخول)',id:'ac-user',req:1,dir:'ltr',val:u.username,hint:'أحرف إنجليزية وأرقام فقط — سيُستخدم عند تسجيل الدخول لاحقًا'})}
+        ${fld({l:'رقم الهاتف',id:'ac-phone',req:1,dir:'ltr',val:u.phone||'',ph:'07XX XXX XXXX'})}
+        <button class="btn primary" id="ac-save-info">${icon('check')}حفظ التعديلات</button>
+      </div>`:''}
+      <div class="card" style="padding:20px">
+        <div class="sec-h">${icon('lock')}<b>تغيير كلمة المرور</b></div>
+        ${fld({l:'كلمة المرور الحالية',id:'ac-old',req:1,type:'password',dir:'ltr'})}
+        ${fld({l:'كلمة المرور الجديدة',id:'ac-new',req:1,type:'password',dir:'ltr',hint:'6 أحرف على الأقل'})}
+        ${fld({l:'تأكيد كلمة المرور الجديدة',id:'ac-new2',req:1,type:'password',dir:'ltr'})}
+        <button class="btn primary" id="ac-save">${icon('check')}حفظ كلمة المرور الجديدة</button>
+      </div>
+    </div>
+  </div>`;
+  $('#ac-logout').onclick=doLogout;
+  /* تغيير كلمة المرور */
+  $('#ac-save').onclick=async()=>{
+    clearErrs(['ac-old','ac-new','ac-new2']);
+    const o=getV('ac-old'),n=getV('ac-new'),n2=getV('ac-new2');
+    if(await hashPw(o,full.salt)!==full.passwordHash)return setErr('ac-old','كلمة المرور الحالية غير صحيحة');
+    if(n.length<6)return setErr('ac-new','6 أحرف على الأقل');
+    if(n!==n2)return setErr('ac-new2','كلمتا المرور غير متطابقتين');
+    full.salt=newSalt();full.passwordHash=await hashPw(n,full.salt);full.updatedAt=Date.now();save();
+    log(u.id,'pw_change','user',u.id,'تغيير كلمة مرور الحساب الذاتي');
+    toast('تم تغيير كلمة المرور بنجاح');
+    document.getElementById('ac-old').value=document.getElementById('ac-new').value=document.getElementById('ac-new2').value='';
+  };
+  /* تعديل معلومات الحساب — للمدير فقط */
+  if(isAdmin){
+    const infoBtn=$('#ac-save-info');
+    if(infoBtn)infoBtn.onclick=async()=>{
+      clearErrs(['ac-name','ac-user','ac-phone']);
+      const name=getV('ac-name'),uname=getV('ac-user').toLowerCase(),phone=getV('ac-phone');
+      let bad=false;
+      if(name.length<3){setErr('ac-name','الاسم 3 أحرف على الأقل');bad=true}
+      if(!/^[a-z0-9_.]{3,20}$/.test(uname)){setErr('ac-user','اسم مستخدم غير صالح (3-20 حرفًا إنجليزيًا)');bad=true}
+      if(DB.users.some(x=>x.username.toLowerCase()===uname&&x.id!==u.id)){setErr('ac-user','اسم المستخدم مستخدم مسبقًا');bad=true}
+      const phOk=s=>{if(!s)return false;const d=s.replace(/\D/g,'');return d.length>=10&&d.length<=11&&d.startsWith('0')};
+      if(!phOk(phone)){setErr('ac-phone','رقم عراقي صحيح مثل 07701234567');bad=true}
+      if(bad){toast('يرجى تصحيح الحقول المشار إليها','warn');return}
+      /* تطبيق التعديلات على سجل المستخدم */
+      Object.assign(full,{name,username:uname,phone,updatedAt:Date.now()});
+      /* تحديث بيانات الجلسة الحالية لتنعكس فورًا */
+      state.user=pubUser(full);
+      save();
+      log(u.id,'account_update','user',u.id,`تعديل بيانات حساب المدير الذاتي — «${name}»`);
+      toast('تم حفظ التعديلات بنجاح');
+      /* إعادة بناء الواجهة وإعادة رسم الصفحة */
+      shellBuiltFor=null;
+      route();
+    };
+  }
+}
+
+/* ============================================================
+   أدوات التصدير
+   ============================================================ */
+function dlFile(name,content,mime){const b=new Blob([content],{type:mime});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}
+function exportCSV(cols,rows,label){
+  const cell=v=>{let s=String(v??'');if(/^[=+\-@]/.test(s))s="'"+s;return'"'+s.replace(/"/g,'""')+'"'};
+  const csv='\uFEFF'+cols.map(c=>cell(c.t)).join(',')+'\r\n'+rows.map(r=>cols.map(c=>cell(r[c.k])).join(',')).join('\r\n');
+  dlFile(label+'.csv',csv,'text/csv;charset=utf-8');
+}
+function exportXLS(cols,rows,label,title){
+  const x=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const xml=`<?xml version="1.0" encoding="UTF-8"?>\n<?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="h"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1C5C44" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style></Styles><Worksheet ss:Name="${x(title).slice(0,28)}"><Table>${'<Row>'+cols.map(c=>`<Cell ss:StyleID="h"><Data ss:Type="String">${x(c.t)}</Data></Cell>`).join('')+'</Row>'}${rows.map(r=>'<Row>'+cols.map(c=>`<Cell><Data ss:Type="String">${x(r[c.k])}</Data></Cell>`).join('')+'</Row>').join('')}</Table></Worksheet></Workbook>`;
+  dlFile(label+'.xls',xml,'application/vnd.ms-excel');
+}
+function printTable(cols,rows,title,sub){
+  const w=window.open('','_blank');
+  if(!w)return toast('يرجى السماح بالنوافذ المنبثقة لإتمام الطباعة','warn');
+  w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${esc(title)}</title><style>
+    body{font-family:'IBM Plex Sans Arabic','Segoe UI',Tahoma,sans-serif;padding:26px;color:#1c2a22}
+    h1{font-size:19px;margin:0 0 4px}p{color:#67766d;margin:0 0 16px;font-size:12px}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th{background:#eef2ef;text-align:right;padding:8px;border-bottom:2px solid #1c5c44}
+    td{padding:7px 8px;border-bottom:1px solid #ddd}
+    @page{margin:14mm}</style></head><body><h1>${esc(title)}</h1><p>${esc(sub)}</p>
+    <table><thead><tr>${cols.map(c=>`<th>${esc(c.t)}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td>${esc(r[c.k])}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`);
+  w.document.close();setTimeout(()=>w.print(),400);
+}
+
+/* ============================================================
+   الإقلاع
+   ============================================================ */
+(async function init(){
+  applyTheme(localStorage.getItem('midan_theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
+  if(!localStorage.getItem(LS))await seedDB();else{DB=JSON.parse(localStorage.getItem(LS));migrateDB()}
+  state.user=restoreSession();
+  window.addEventListener('hashchange',()=>{if(parseHash().name==='login'&&shellBuiltFor===null)$('#app').classList.add('authwrap')});
+  if(!location.hash)location.hash=state.user?'#/dash':'#/login';
+  route();
+})();
+
+
+/* ===== next script block ===== */
+
+</script>
+</body>
+</html>
